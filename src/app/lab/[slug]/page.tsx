@@ -94,6 +94,14 @@ export default async function LabSitePage({
               <div className="mt-4">
                 <experiment.Demo />
               </div>
+              {experiment.Sample ? (
+                <Link
+                  href={`/lab/${site.slug}/sample`}
+                  className="mt-4 inline-block text-sm text-accent hover:text-accent-hover"
+                >
+                  전체 페이지 샘플 보기 →
+                </Link>
+              ) : null}
             </div>
 
             <div className="mt-12">
