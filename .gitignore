@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+.tmp-drive-audit/
 
 # debug
 npm-debug.log*
