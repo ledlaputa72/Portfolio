@@ -25,6 +25,7 @@
 | `Portfolio_Site_PlanBook_v1.0` | 사이트 IA, 디자인 시스템, 콘텐츠, 로드맵 (마스터 기획서) |
 | `web-build-research-handoff.md` | Framer / Webflow / 직접 코딩 기술 조사 결과 |
 | `AI-Tools-Workflow.md` (본 문서) | AI 도구 역할 분담 및 Git 협업 규칙 |
+| `Laptop-Setup-Guide.md` | 랩탑 Cursor 설치·세팅 (자동 스크립트 포함) |
 | `포트폴리오 사이트 자료 정리/` | 케이스 스터디 EN/KO 텍스트 (10개) |
 | `레퍼런스 사이트/` | Three.js 및 디자인 레퍼런스 |
 
