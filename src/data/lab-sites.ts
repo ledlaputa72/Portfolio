@@ -67,16 +67,17 @@ export const labSites: LabSite[] = [
     url: "https://tonymak.co",
     category: "interactive-portfolio",
     categoryLabel: INTERACTIVE_PORTFOLIO_LABEL,
-    confidence: "추정",
+    confidence: "부분확인",
     concept:
-      "'Creative at the Speed of Next'를 표방하는 크리에이티브 개인 포트폴리오. 빠른 전환과 타이포 중심의 다이내믹한 인상.",
+      "'Creative at the Speed of Next' / Art Direction & Systems. 브랜드·AI·시스템 사고를 타이포 중심 미니멀 UI로 전달하는 크리에이티브 포트폴리오.",
     techniques: [
-      "페이지 전환 트랜지션",
-      "타이포그래피 모션",
+      "페이지 전환·로딩 인트로 모션",
+      "타이포그래피·시스템 UI 모션",
       "커서 인터랙션",
       "GSAP 타임라인",
     ],
-    signature: "프로젝트 간 전환 시 속도감 있는 타이포/이미지 와이프 트랜지션.",
+    signature:
+      "Loading-to-intro, page transition, custom cursor를 포함한 속도감 있는 타이포·UI 전환.",
     difficulty: "중",
   },
   {
@@ -85,16 +86,17 @@ export const labSites: LabSite[] = [
     url: "https://lessestudio.com",
     category: "interactive-portfolio",
     categoryLabel: INTERACTIVE_PORTFOLIO_LABEL,
-    confidence: "추정",
+    confidence: "부분확인",
     concept:
-      "Design & Technology를 표방하는 스튜디오 사이트. 절제된 그리드와 미세한 3D 디테일로 기술력을 은근히 드러낸다.",
+      "Design & Technology 스튜디오. SvelteKit 기반으로 clarity·performance·intentionality 우선. refined typography, intentional layout, subtle motion으로 craft를 드러낸다.",
     techniques: [
-      "그리드 기반 레이아웃 모션",
-      "스크롤 패럴럭스",
-      "라이트 3D 오브젝트 하이라이트",
-      "호버 마이크로 인터랙션",
+      "SvelteKit 커스텀 애니메이션(외부 애니메이션 라이브러리 없음)",
+      "타이포그래피·그리드 레이아웃 모션",
+      "미세 hover/scroll transition",
+      "성능 최적화(WebP pipeline, Cloudflare R2)",
     ],
-    signature: "프로젝트 카드 호버 시 3D 오브젝트가 미세하게 회전하며 반응.",
+    signature:
+      "절제된 타이포·그리드 레이아웃과 subtle scroll/hover motion으로 immersive yet functional 경험.",
     difficulty: "중",
   },
   {
@@ -103,16 +105,17 @@ export const labSites: LabSite[] = [
     url: "https://kvs.services",
     category: "interactive-portfolio",
     categoryLabel: INTERACTIVE_PORTFOLIO_LABEL,
-    confidence: "추정",
+    confidence: "부분확인",
     concept:
-      "Product Design & Creative Dev를 표방하는 스튜디오. 제품 데모처럼 인터랙티브한 쇼케이스 형식.",
+      "Product Design & Creative Development. 인터랙티브 타이포·게이미피케이션 UI로 premium design partner 포지셔닝.",
     techniques: [
-      "3D 제품 모델 인터랙션",
-      "드래그 회전",
-      "스크롤 연동 카메라 무브",
-      "R3F 기반 씬",
+      "인터랙티브 타이포/글리치 UI",
+      "CLICK TO BREAK 등 마이크로 게임화",
+      "커서/터치 인터랙션",
+      "DOM/GSAP 커스텀 모션",
     ],
-    signature: "프로젝트 쇼케이스에서 3D 모델을 드래그로 자유롭게 회전 가능.",
+    signature:
+      "'CLICK TO BREAK' 등 인터랙티브 UI가 타이포·좌표 HUD와 함께 깨지며 쇼케이스를 전개.",
     difficulty: "중",
   },
   {
@@ -121,16 +124,17 @@ export const labSites: LabSite[] = [
     url: "https://synapserstudio.com",
     category: "interactive-portfolio",
     categoryLabel: INTERACTIVE_PORTFOLIO_LABEL,
-    confidence: "추정",
+    confidence: "확인됨",
     concept:
-      "신경망/시냅스를 연상시키는 이름처럼, 연결과 흐름을 형상화한 비주얼의 크리에이티브 스튜디오.",
+      "Lisbon digital atelier. scroll-driven 3D world — 섹션마다 독립 씬, camera drift, manifesto·archive가 하나의 cinematic journey로 연결.",
     techniques: [
-      "파티클 네트워크/노드 연결 비주얼",
-      "마우스 추적 인터랙션",
-      "GLSL 노이즈 셰이더",
-      "WebGL 배경 씬",
+      "Three.js + Blender 파이프라인",
+      "GSAP ScrollTrigger + Observer",
+      "scroll-driven camera/scene 전환",
+      "WebGL hero mouse interaction",
     ],
-    signature: "마우스 움직임에 따라 파티클 노드 간 연결선이 실시간으로 재구성.",
+    signature:
+      "스크롤 진행에 따라 3D 환경의 카메라·오브젝트·타이포가 장면 단위로 전환되는 scroll-driven storytelling.",
     difficulty: "상",
   },
   {
@@ -193,16 +197,17 @@ export const labSites: LabSite[] = [
     url: "https://digitalists.at",
     category: "interactive-portfolio",
     categoryLabel: INTERACTIVE_PORTFOLIO_LABEL,
-    confidence: "추정",
+    confidence: "부분확인",
     concept:
-      "WordPress 기반의 웹 에이전시 사이트. 상대적으로 라이트한 모션으로 실무 친화적인 균형감을 보여준다.",
+      "오스트리아 WordPress/Webflow 에이전시. 실무적 웹디자인·브랜딩·캠페인, Awwwards HM portfolio.",
     techniques: [
-      "라이트 패럴럭스 스크롤",
-      "CSS/GSAP 하이브리드 모션",
-      "호버 카드 트랜지션",
-      "심플 페이지 전환",
+      "WordPress/WooCommerce",
+      "CSS/GSAP 라이트 모션",
+      "호버 카드 transition",
+      "scroll reveal 섹션 전환",
     ],
-    signature: "서비스 카드에 마우스를 올리면 가벼운 패럴럭스 틸트가 적용.",
+    signature:
+      "서비스·프로젝트 카드 hover와 scroll reveal 중심의 실무적 모션(Three.js 핵심 아님).",
     difficulty: "하",
   },
 
@@ -579,14 +584,15 @@ export const labSites: LabSite[] = [
     categoryLabel: DATA_VIZ_LABEL,
     confidence: "확인(노미니)",
     concept:
-      "치과 브랜드. Awwwards 노미니로, '지루한 업종도 craft로 수상권에 들 수 있다'는 증거가 되는 사례.",
+      "UK 치과 그룹. immersive fully 3D interactive website — practice locations, services, 3D modelling을 WebGL/Three.js로 탐색.",
     techniques: [
-      "미니멀 클레이/3D 일러스트",
-      "부드러운 스크롤 트랜지션",
-      "호버 마이크로 인터랙션",
-      "따뜻한 컬러 팔레트 라이팅",
+      "3D scroll animation",
+      "3D interactive navigation",
+      "practice location 3D model",
+      "WebGL/Three.js + Next.js",
     ],
-    signature: "스크롤마다 치아/케어 관련 3D 일러스트가 부드럽게 등장.",
+    signature:
+      "3D scroll animation과 3D interactive navigation으로 dental practices·locations를 immersive하게 탐색.",
     difficulty: "하",
   },
   {
