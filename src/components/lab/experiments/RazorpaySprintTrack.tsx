@@ -39,11 +39,11 @@ function TrackScene({ progressRef }: { progressRef: React.RefObject<number> }) {
       <group key={i} position={[0, 0, z]}>
         <mesh position={[-1.6, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[0.15, 1]} />
-          <meshStandardMaterial color="#3b82f6" />
+          <meshStandardMaterial color="#0039ff" />
         </mesh>
         <mesh position={[1.6, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[0.15, 1]} />
-          <meshStandardMaterial color="#3b82f6" />
+          <meshStandardMaterial color="#0039ff" />
         </mesh>
       </group>
     );
@@ -60,7 +60,7 @@ function TrackScene({ progressRef }: { progressRef: React.RefObject<number> }) {
         receiveShadow
       >
         <planeGeometry args={[4, TRACK_LENGTH + 20]} />
-        <meshStandardMaterial color="#1f2937" />
+        <meshStandardMaterial color="#151515" />
       </mesh>
 
       {markers}
@@ -68,14 +68,14 @@ function TrackScene({ progressRef }: { progressRef: React.RefObject<number> }) {
       <group ref={runnerRef} position={[0, 0.5, 0]}>
         <mesh>
           <capsuleGeometry args={[0.28, 0.7, 4, 8]} />
-          <meshStandardMaterial color="#f9fafb" roughness={0.3} metalness={0.1} />
+          <meshStandardMaterial color="#0039ff" roughness={0.3} metalness={0.1} />
         </mesh>
       </group>
     </>
   );
 }
 
-export default function HirotoSatoTrack() {
+export default function RazorpaySprintTrack() {
   const triggerRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef(0);
   const [distance, setDistance] = useState(0);
@@ -102,30 +102,30 @@ export default function HirotoSatoTrack() {
 
   return (
     <div ref={triggerRef} className="relative" style={{ height: "300vh" }}>
-      <div className="sticky top-0 h-screen w-full overflow-hidden rounded-lg border border-border bg-bg-secondary">
+      <div className="sticky top-0 h-screen w-full overflow-hidden bg-[#151515]">
         <Canvas camera={{ position: [0, 1.8, 4], fov: 50 }} dpr={[1, 2]}>
           <TrackScene progressRef={progressRef} />
         </Canvas>
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-6">
           <div>
-            <p className="text-xs uppercase tracking-wide text-text-muted">
-              Distance
+            <p className="text-xs uppercase tracking-wide text-white/50">
+              Trigger Distance
             </p>
-            <p className="text-3xl font-bold text-text-primary">
-              {distance}<span className="text-base text-text-secondary"> m</span>
+            <p className="text-3xl font-bold text-white">
+              {distance}<span className="text-base text-white/60"> pt</span>
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs uppercase tracking-wide text-text-muted">
+            <p className="text-xs uppercase tracking-wide text-white/50">
               Scroll Progress
             </p>
-            <p className="text-3xl font-bold text-accent">{percent}%</p>
+            <p className="text-3xl font-bold text-[#0039ff]">{percent}%</p>
           </div>
         </div>
 
-        <div className="pointer-events-none absolute left-6 top-6 text-xs text-text-muted">
-          스크롤하면 주자가 트랙을 따라 전진합니다 ↓
+        <div className="pointer-events-none absolute left-6 top-6 text-xs text-white/50">
+          스크롤하면 쇼퍼의 여정을 따라 오브제가 전진합니다 ↓
         </div>
       </div>
     </div>

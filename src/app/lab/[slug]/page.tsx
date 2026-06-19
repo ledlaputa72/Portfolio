@@ -56,6 +56,15 @@ export default async function LabSitePage({
           </span>
         </div>
 
+        {experiment?.Sample ? (
+          <Link
+            href={`/lab/${site.slug}/sample`}
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
+          >
+            전체 페이지 샘플 보기 →
+          </Link>
+        ) : null}
+
         <div className="mt-10">
           <h2 className="text-lg font-bold text-text-primary">컨셉</h2>
           <p className="mt-2 text-text-secondary">{site.concept}</p>
@@ -91,7 +100,7 @@ export default async function LabSitePage({
               <p className="mt-2 text-sm text-text-secondary">
                 스크롤에 따라 변화하는 부분을 실제로 움직여보세요.
               </p>
-              <div className="mt-4">
+              <div className="mx-[calc(50%-50vw)] mt-4 w-screen">
                 <experiment.Demo />
               </div>
               {experiment.Sample ? (

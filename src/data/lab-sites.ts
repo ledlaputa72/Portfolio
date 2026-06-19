@@ -31,16 +31,16 @@ export const labSites: LabSite[] = [
     categoryLabel: INTERACTIVE_PORTFOLIO_LABEL,
     confidence: "확인됨",
     concept:
-      "스크롤 거리에 육상 선수의 전진을 연동시키는 'TRACK' 작품. 스크롤은 단순 이동이 아니라 내러티브를 진행시키는 엔진이다.",
+      "중앙의 가느다란 흰색 기둥을 중심으로 거울/아케이드 쇼릴 화면, 태그형 사인, 화살표형 표지판이 떠다니는 단일 3D 히어로 구성. 도로 표지판 클러스터처럼 내비게이션을 형상화한다.",
     techniques: [
-      "스크롤 연동 캐릭터/카메라 애니메이션",
-      "Three.js 커스텀 씬 구성",
-      "GSAP ScrollTrigger 타임라인",
-      "트랙/레인 기반 3D 환경",
+      "떠다니는 3D 오브젝트 클러스터(부유 애니메이션)",
+      "마우스 드래그/패럴럭스 회전",
+      "반사 머티리얼(미러) + 렌더 타깃으로 화면 속 화면(showreel) 표현",
+      "표지판형 내비게이션 오브젝트",
     ],
     signature:
-      "스크롤량에 정확히 비례해 달리는 선수의 위치가 진행되는 트랙 시뮬레이션.",
-    difficulty: "상",
+      "원형 미러가 아케이드풍 쇼릴 화면을 반사하고, 그 주변을 'HIROTO SATO' 태그 사인과 'PROJECTS ARCHIVE' 화살표 표지판이 마우스 움직임에 따라 패럴럭스로 부유.",
+    difficulty: "중",
   },
   {
     slug: "danzan",
@@ -215,15 +215,16 @@ export const labSites: LabSite[] = [
     categoryLabel: BRAND_EXPERIENCE_LABEL,
     confidence: "확인됨",
     concept:
-      "B2B 결제 캠페인. WebGL+Three.js+Webflow 조합으로 단 2색(#0039FF/#151515) 팔레트만 사용하면서도 100개 이상의 스크롤/클릭 트리거로 풍부한 경험을 만든다. Awwwards SOTD.",
+      "B2B 결제 캠페인. WebGL+Three.js+Webflow 조합으로 단 2색(#0039FF/#151515) 팔레트만 사용하면서도 100개 이상의 스크롤/클릭 트리거로 풍부한 경험을 만든다. 스크롤에 따라 거대한 오브제가 트랙을 따라 전진하며 쇼퍼의 결제 여정을 내러티브로 펼친다. Awwwards SOTD.",
     techniques: [
       "2색 팔레트 기반 WebGL 씬",
       "100+ 스크롤/클릭 트리거 오케스트레이션",
+      "스크롤 연동 오브제 전진(트랙형 진행 내러티브)",
       "Webflow + Three.js 하이브리드",
       "GSAP ScrollTrigger 타임라인 체이닝",
     ],
     signature:
-      "스크롤 한 번마다 여러 마이크로 인터랙션이 동시에 트리거되는 고밀도 시퀀스.",
+      "스크롤에 따라 거대한 오브제(신발)를 중심으로 100+ 트리거가 순차적으로 전진하며 쇼퍼의 여정처럼 펼쳐짐.",
     difficulty: "상",
   },
   {
