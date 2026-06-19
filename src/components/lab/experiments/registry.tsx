@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import HirotoSatoTrack from "./HirotoSatoTrack";
+import HirotoSatoSample from "./HirotoSatoSample";
 
 export type LabExperiment = {
   Demo: ComponentType;
@@ -9,11 +10,14 @@ export type LabExperiment = {
     points: string[];
     snippet: { label: string; code: string };
   };
+  /** Optional full-page sample mimicking the reference site's overall flow. */
+  Sample?: ComponentType;
 };
 
 export const labExperiments: Record<string, LabExperiment> = {
   "hiroto-sato": {
     Demo: HirotoSatoTrack,
+    Sample: HirotoSatoSample,
     notes: {
       libraries: [
         "@react-three/fiber — Canvas, useFrame",
