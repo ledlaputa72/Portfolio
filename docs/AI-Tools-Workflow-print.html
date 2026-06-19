@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI 도구 역할 정의서 — 포트폴리오 프로젝트</title>
+  <style>
+    @page { margin: 20mm 18mm; size: A4; }
+    body {
+      font-family: "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+      font-size: 11pt;
+      line-height: 1.55;
+      color: #111;
+      max-width: 100%;
+    }
+    h1 { font-size: 20pt; border-bottom: 2px solid #3b82f6; padding-bottom: 8px; margin-top: 0; }
+    h2 { font-size: 14pt; color: #1e40af; margin-top: 24px; page-break-after: avoid; }
+    h3 { font-size: 12pt; margin-top: 18px; page-break-after: avoid; }
+    blockquote {
+      background: #f3f4f6;
+      border-left: 4px solid #3b82f6;
+      margin: 12px 0;
+      padding: 10px 14px;
+      font-size: 10pt;
+    }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 10pt; }
+    th, td { border: 1px solid #d1d5db; padding: 6px 8px; text-align: left; vertical-align: top; }
+    th { background: #eff6ff; }
+    code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; font-size: 9.5pt; }
+    pre { background: #f9fafb; border: 1px solid #e5e7eb; padding: 12px; overflow-x: auto; font-size: 9pt; }
+    hr { border: none; border-top: 1px solid #e5e7eb; margin: 20px 0; }
+    ul { padding-left: 20px; }
+    li { margin: 4px 0; }
+    .meta { color: #6b7280; font-size: 10pt; }
+  </style>
+</head>
+<body>
+<h1>AI 도구 역할 정의서 — 포트폴리오 프로젝트</h1>
+<blockquote>
+<p><strong>문서 버전:</strong> v1.0<br />
+<strong>작성일:</strong> 2026년 6월<br />
+<strong>작성자:</strong> Steve Jung (with Claude / Cursor)<br />
+<strong>프로젝트:</strong> 2027년 이직 프로젝트 — B2B Hardware Marketing Manager 포트폴리오 사이트<br />
+<strong>관련 저장소:</strong> https://github.com/ledlaputa72/Portfolio.git<br />
+<strong>작업 브랜치:</strong> <code>claude/gracious-wozniak-g7ld41</code><br />
+<strong>로컬 경로:</strong> <code>D:\New Steve\AI Portfolio</code><br />
+<strong>Google Drive:</strong> 2027년 이직 프로젝트 (with AI)</p>
+</blockquote>
+<hr />
+<h2>문서 목적</h2>
+<p>이 문서는 포트폴리오 사이트 제작에 사용하는 AI 도구들의 <strong>역할, 담당 범위, 협업 규칙</strong>을 정의합니다.</p>
+<p><strong>Claude (대화), Claude Code (웹), Cursor (로컬), Gemini</strong> 등 모든 AI 세션에서 이 문서를 기준 문서로 참조하세요.</p>
+<h3>함께 참조할 문서</h3>
+<table>
+<tr><th>문서</th><th>용도</th></tr>
+<tr><td><code>Portfolio_Site_PlanBook_v1.0</code></td><td>사이트 IA, 디자인 시스템, 콘텐츠, 로드맵</td></tr>
+<tr><td><code>web-build-research-handoff.md</code></td><td>Framer / Webflow / 직접 코딩 기술 조사</td></tr>
+<tr><td><code>AI-Tools-Workflow.md</code></td><td>AI 도구 역할 분담 및 Git 협업 규칙 (본 문서)</td></tr>
+<tr><td>포트폴리오 사이트 자료 정리/</td><td>케이스 스터디 EN/KO 텍스트 (10개)</td></tr>
+<tr><td>레퍼런스 사이트/</td><td>Three.js 및 디자인 레퍼런스</td></tr>
+</table>
+<hr />
+<h2>1. 핵심 원칙</h2>
+<h3>1.1 단일 진실 소스</h3>
+<pre>Claude Code (웹)  ←→  GitHub Repo  ←→  Cursor (로컬)
+     기획·구조·콘텐츠              코드·UI·로컬 검증</pre>
+<ul>
+<li><strong>코드:</strong> GitHub <code>ledlaputa72/Portfolio</code>, 브랜치 <code>claude/gracious-wozniak-g7ld41</code></li>
+<li><strong>기획:</strong> Google Drive <code>Portfolio_Site_PlanBook_v1.0</code></li>
+<li><strong>콘텐츠:</strong> Google Drive <code>포트폴리오 사이트 자료 정리/</code></li>
+</ul>
+<h3>1.2 기술 스택 (확정)</h3>
+<table>
+<tr><th>항목</th><th>선택</th></tr>
+<tr><td>프레임워크</td><td>Next.js 16 (App Router)</td></tr>
+<tr><td>3D</td><td>React Three Fiber + Three.js</td></tr>
+<tr><td>애니메이션</td><td>GSAP</td></tr>
+<tr><td>스크롤</td><td>Lenis</td></tr>
+<tr><td>스타일</td><td>Tailwind CSS v4</td></tr>
+<tr><td>배포 (예정)</td><td>Vercel</td></tr>
+<tr><td>사용하지 않음</td><td>Framer, v0, Webflow</td></tr>
+</table>
+<h3>1.3 Git 협업 규칙</h3>
+<table>
+<tr><th>시점</th><th>명령</th></tr>
+<tr><td>작업 시작 전</td><td><code>git pull origin claude/gracious-wozniak-g7ld41</code></td></tr>
+<tr><td>작업 완료 후</td><td><code>git add -A</code> → commit → push</td></tr>
+<tr><td>다른 도구로 넘길 때</td><td>"○○에서 작업했으니 pull하고 [다음 작업] 이어서"</td></tr>
+</table>
+<hr />
+<h2>2. AI 도구별 역할</h2>
+<h3>2.1 Claude Code (웹/클라우드) — 주 담당</h3>
+<p>GitHub 연결 클라우드 코딩. 멀티파일 구현, 기획, 콘텐츠, 배포.</p>
+<table>
+<tr><th>역할</th><th>작업</th></tr>
+<tr><td>전략·기획</td><td>IA, 컴포넌트 설계, Phase 우선순위</td></tr>
+<tr><td>텍스트</td><td>Hero 카피, About, 케이스 스터디 교정</td></tr>
+<tr><td>멀티파일 구현</td><td>페이지·라우트·섹션 대량 생성</td></tr>
+<tr><td>배포</td><td>Vercel, 도메인, CI/CD</td></tr>
+</table>
+<p><strong>세션 시작:</strong> GitHub pull + 기획서 + 본 문서 참조 후 [작업] 진행</p>
+<h3>2.2 Cursor (로컬 IDE) — 주 담당</h3>
+<p><code>D:\New Steve\AI Portfolio</code>. 로컬 dev server, UI 미세 조정, 3D/애니메이션 디버깅.</p>
+<table>
+<tr><th>역할</th><th>작업</th></tr>
+<tr><td>로컬 검증</td><td>npm run dev, localhost:3000</td></tr>
+<tr><td>UI 미세 조정</td><td>간격, 색, 타이밍, 반응형</td></tr>
+<tr><td>3D·인터랙션</td><td>R3F, GSAP, Lenis</td></tr>
+<tr><td>버그·품질</td><td>빌드, lint, Lighthouse, 모바일</td></tr>
+</table>
+<h3>2.3 Claude (대화) — 주 담당</h3>
+<p>기획 논의, 텍스트 작성, Artifacts 프로토타입, 문서 작성. Repo 직접 수정은 Claude Code/Cursor 담당.</p>
+<h3>2.4 Gemini — 보조</h3>
+<p>Google Drive 연동, 이미지 분석, 스크린샷→카피. 코드·Git은 Claude Code/Cursor.</p>
+<h3>2.5 사용하지 않는 도구</h3>
+<p>v0, Framer, Webflow — Next.js 직접 코딩으로 확정.</p>
+<hr />
+<h2>3. 작업 유형별 담당 매트릭스</h2>
+<table>
+<tr><th>작업</th><th>Claude Code</th><th>Cursor</th><th>Claude</th><th>Gemini</th></tr>
+<tr><td>페이지/섹션 골격</td><td>✅ 주</td><td>△</td><td>△</td><td>—</td></tr>
+<tr><td>3D·스크롤 미세 튜닝</td><td>△</td><td>✅ 주</td><td>—</td><td>—</td></tr>
+<tr><td>케이스 스터디 텍스트</td><td>✅</td><td>△</td><td>✅ 주</td><td>△</td></tr>
+<tr><td>레이아웃·이미지</td><td>△</td><td>✅ 주</td><td>—</td><td>△</td></tr>
+<tr><td>버그·빌드·lint</td><td>△</td><td>✅ 주</td><td>—</td><td>—</td></tr>
+<tr><td>기획·문서</td><td>✅</td><td>△</td><td>✅ 주</td><td>△</td></tr>
+<tr><td>배포·Vercel</td><td>✅ 주</td><td>△</td><td>—</td><td>—</td></tr>
+<tr><td>이미지→카피</td><td>—</td><td>—</td><td>△</td><td>✅ 주</td></tr>
+</table>
+<p>✅ 주 = 주 담당 · △ = 보조 · — = 해당 없음</p>
+<hr />
+<h2>4. 권장 워크플로</h2>
+<h3>패턴 A — Claude Code 선행</h3>
+<ol>
+<li>Claude Code: 구조·페이지 구현 → push</li>
+<li>Cursor: pull → 로컬 확인·UI 다듬기 → push</li>
+<li>Claude Code: pull → 다음 페이지 이어서</li>
+</ol>
+<h3>패턴 B — Cursor 선행</h3>
+<ol>
+<li>Cursor: Hero/3D/반응형 수정 → push</li>
+<li>Claude Code: pull → About 등 이어서</li>
+</ol>
+<h3>패턴 C — 병렬</h3>
+<p>Claude Code: 텍스트·Contact · Cursor: Gallery·3D. 같은 파일 동시 수정 금지.</p>
+<hr />
+<h2>5. 핸드오프 문구</h2>
+<p><strong>Claude Code로:</strong> "Cursor에서 [작업] push했어. pull하고 [다음] 이어서. AI-Tools-Workflow.md 참조."</p>
+<p><strong>Cursor로:</strong> "Claude Code에서 [작업] push했어. D:\New Steve\AI Portfolio에서 pull 후 [UI/3D] 작업."</p>
+<hr />
+<h2>6. 프로젝트 현황 (2026-06)</h2>
+<table>
+<tr><th>항목</th><th>상태</th></tr>
+<tr><td>Next.js + R3F + GSAP + Lenis</td><td>✅</td></tr>
+<tr><td>디자인 시스템</td><td>✅</td></tr>
+<tr><td>Home Hero + Impact</td><td>✅ 기본</td></tr>
+<tr><td>케이스 스터디 5페이지</td><td>⏳</td></tr>
+<tr><td>About / Gallery / Contact</td><td>⏳</td></tr>
+<tr><td>케이스 텍스트 EN/KO</td><td>✅ Drive</td></tr>
+</table>
+<hr />
+<p class="meta"><em>v1.0 | 2026년 6월 | Claude · Claude Code · Cursor · Gemini 작업 시 마스터 기준 문서</em></p>
+<p class="meta">전체 Markdown: <code>AI-Tools-Workflow.md</code> (Google Drive 동일 폴더)</p>
+</body>
+</html>
