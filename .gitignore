@@ -33,6 +33,11 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# Google Drive MCP credentials (keep in %APPDATA%, never in repo)
+**/oauth-credentials.json
+**/mcp-server-google-drive/
+.mcp-google-drive/
+
 # vercel
 .vercel
 
