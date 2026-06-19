@@ -1,0 +1,36 @@
+digitalists 사이트 실험 기획
+
+레퍼런스: digitalists — https://digitalists.at
+카테고리: 인터랙티브 포트폴리오 / 크리에이티브 스튜디오
+신뢰도: 부분확인
+난이도: 하
+Three.js 핵심: 아니오 (CSS/DOM/GSAP 중심)
+사이트 경로: /lab/digitalists
+Lab 문서: Lab-10-Digitalists-기획
+
+1. 컨셉 / 메시지
+오스트리아 WordPress/Webflow 에이전시. 실무적 웹디자인·브랜딩·캠페인, Awwwards HM portfolio.
+
+2. 시그니처 인터랙션
+서비스·프로젝트 카드 hover와 scroll reveal 중심의 실무적 모션(Three.js 핵심 아님).
+
+3. 구현할 기술 (Three.js / R3F / GSAP 기준)
+- WordPress/WooCommerce
+- CSS/GSAP 라이트 모션
+- 호버 카드 transition
+- scroll reveal 섹션 전환
+
+4. 구현 단계 제안
+1) 정적 레이아웃 + 타이포/컬러 톤 잡기
+2) WordPress/WooCommerce을 위한 핵심 셋업 후 정지 상태로 렌더
+3) 스크롤/인터랙션 연동 (서비스·프로젝트 카드 hover와 scroll reveal 중심의 실무적 모션(Three.js 핵심 아님).)
+4) 디테일 다듬기 (이징, 퍼포먼스, 반응형, prefers-reduced-motion)
+
+5. 검증 출처
+- Live: https://digitalists.at
+- Awwwards HM — digitalists
+
+6. 커서 작업 시 참고
+- Three.js 핵심 → DOM/CSS/GSAP 우선, WebGL은 보조만
+- @react-three/drei 헬퍼는 3D Lab에만 적용
+- 모바일 성능과 prefers-reduced-motion 접근성 대응 확인

@@ -1,0 +1,37 @@
+Synapser Studio 사이트 실험 기획
+
+레퍼런스: Synapser Studio — https://synapserstudio.com
+카테고리: 인터랙티브 포트폴리오 / 크리에이티브 스튜디오
+신뢰도: 확인됨
+난이도: 상
+Three.js 핵심: 예
+사이트 경로: /lab/synapser-studio
+Lab 문서: Lab-06-Synapser-Studio-기획
+
+1. 컨셉 / 메시지
+Lisbon digital atelier. scroll-driven 3D world — 섹션마다 독립 씬, camera drift, manifesto·archive가 하나의 cinematic journey로 연결.
+
+2. 시그니처 인터랙션
+스크롤 진행에 따라 3D 환경의 카메라·오브젝트·타이포가 장면 단위로 전환되는 scroll-driven storytelling.
+
+3. 구현할 기술 (Three.js / R3F / GSAP 기준)
+- Three.js + Blender 파이프라인
+- GSAP ScrollTrigger + Observer
+- scroll-driven camera/scene 전환
+- WebGL hero mouse interaction
+
+4. 구현 단계 제안
+1) 정적 레이아웃 + 타이포/컬러 톤 잡기
+2) Three.js + Blender 파이프라인을 위한 핵심 셋업 후 정지 상태로 렌더
+3) 스크롤/인터랙션 연동 (스크롤 진행에 따라 3D 환경의 카메라·오브젝트·타이포가 장면 단위로 전환되는 scroll-driven storytelling.)
+4) 디테일 다듬기 (이징, 퍼포먼스, 반응형, prefers-reduced-motion)
+
+5. 검증 출처
+- Live: https://synapserstudio.com
+- Awwwards HM — synapser-studio
+- Codrops — scroll-driven 3D world (2026)
+
+6. 커서 작업 시 참고
+- Three.js 핵심 → R3F Canvas + useFrame/ScrollTrigger 패턴
+- @react-three/drei 헬퍼는 3D Lab에만 적용
+- 모바일 성능과 prefers-reduced-motion 접근성 대응 확인

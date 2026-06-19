@@ -1,0 +1,36 @@
+Tony Mak 사이트 실험 기획
+
+레퍼런스: Tony Mak — https://tonymak.co
+카테고리: 인터랙티브 포트폴리오 / 크리에이티브 스튜디오
+신뢰도: 부분확인
+난이도: 중
+Three.js 핵심: 아니오 (CSS/DOM/GSAP 중심)
+사이트 경로: /lab/tony-mak
+Lab 문서: Lab-03-Tony-Mak-기획
+
+1. 컨셉 / 메시지
+'Creative at the Speed of Next' / Art Direction & Systems. 브랜드·AI·시스템 사고를 타이포 중심 미니멀 UI로 전달하는 크리에이티브 포트폴리오.
+
+2. 시그니처 인터랙션
+Loading-to-intro, page transition, custom cursor를 포함한 속도감 있는 타이포·UI 전환.
+
+3. 구현할 기술 (Three.js / R3F / GSAP 기준)
+- 페이지 전환·로딩 인트로 모션
+- 타이포그래피·시스템 UI 모션
+- 커서 인터랙션
+- GSAP 타임라인
+
+4. 구현 단계 제안
+1) 정적 레이아웃 + 타이포/컬러 톤 잡기
+2) 페이지 전환·로딩 인트로 모션을 위한 핵심 셋업 후 정지 상태로 렌더
+3) 스크롤/인터랙션 연동 (Loading-to-intro, page transition, custom cursor를 포함한 속도감 있는 타이포·UI 전환.)
+4) 디테일 다듬기 (이징, 퍼포먼스, 반응형, prefers-reduced-motion)
+
+5. 검증 출처
+- Live: https://tonymak.co
+- Awwwards Nominee — tony-mak-art-direction-systems
+
+6. 커서 작업 시 참고
+- Three.js 핵심 → DOM/CSS/GSAP 우선, WebGL은 보조만
+- @react-three/drei 헬퍼는 3D Lab에만 적용
+- 모바일 성능과 prefers-reduced-motion 접근성 대응 확인

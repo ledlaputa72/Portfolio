@@ -1,0 +1,36 @@
+Lesse Studio 사이트 실험 기획
+
+레퍼런스: Lesse Studio — https://lessestudio.com
+카테고리: 인터랙티브 포트폴리오 / 크리에이티브 스튜디오
+신뢰도: 부분확인
+난이도: 중
+Three.js 핵심: 아니오 (CSS/DOM/GSAP 중심)
+사이트 경로: /lab/lesse-studio
+Lab 문서: Lab-04-Lesse-Studio-기획
+
+1. 컨셉 / 메시지
+Design & Technology 스튜디오. SvelteKit 기반으로 clarity·performance·intentionality 우선. refined typography, intentional layout, subtle motion으로 craft를 드러낸다.
+
+2. 시그니처 인터랙션
+절제된 타이포·그리드 레이아웃과 subtle scroll/hover motion으로 immersive yet functional 경험.
+
+3. 구현할 기술 (Three.js / R3F / GSAP 기준)
+- SvelteKit 커스텀 애니메이션(외부 애니메이션 라이브러리 없음)
+- 타이포그래피·그리드 레이아웃 모션
+- 미세 hover/scroll transition
+- 성능 최적화(WebP pipeline, Cloudflare R2)
+
+4. 구현 단계 제안
+1) 정적 레이아웃 + 타이포/컬러 톤 잡기
+2) SvelteKit 커스텀 애니메이션(외부 애니메이션 라이브러리 없음)을 위한 핵심 셋업 후 정지 상태로 렌더
+3) 스크롤/인터랙션 연동 (절제된 타이포·그리드 레이아웃과 subtle scroll/hover motion으로 immersive yet functional 경험.)
+4) 디테일 다듬기 (이징, 퍼포먼스, 반응형, prefers-reduced-motion)
+
+5. 검증 출처
+- Live: https://lessestudio.com
+- Codrops — The Making of the New Lesse Studio Website (2026)
+
+6. 커서 작업 시 참고
+- Three.js 핵심 → DOM/CSS/GSAP 우선, WebGL은 보조만
+- @react-three/drei 헬퍼는 3D Lab에만 적용
+- 모바일 성능과 prefers-reduced-motion 접근성 대응 확인

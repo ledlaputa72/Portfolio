@@ -1,0 +1,37 @@
+Hiroto Sato 사이트 실험 기획
+
+레퍼런스: Hiroto Sato — https://hirotos.com
+카테고리: 인터랙티브 포트폴리오 / 크리에이티브 스튜디오
+신뢰도: 확인됨
+난이도: 중
+Three.js 핵심: 예
+사이트 경로: /lab/hiroto-sato
+Lab 문서: Lab-01-Hiroto-Sato-기획
+
+1. 컨셉 / 메시지
+중앙의 가느다란 흰색 기둥을 중심으로 거울/아케이드 쇼릴, 태그형 사인, 화살표 표지판이 떠다니는 단일 3D 히어로. 도로 표지판 클러스터처럼 내비게이션을 형상화한다.
+
+2. 시그니처 인터랙션
+원형 미러가 아케이드풍 쇼릴 화면을 반사하고, 'HIROTO SATO' 태그·'PROJECTS ARCHIVE' 화살표 표지판이 마우스 움직임에 따라 패럴럭스로 부유.
+
+3. 구현할 기술 (Three.js / R3F / GSAP 기준)
+- 떠다니는 3D 오브젝트 클러스터(부유 애니메이션)
+- 마우스 드래그/패럴럭스 회전
+- 반사 머티리얼(미러) + Render Target 쇼릴
+- 표지판형 내비게이션 오브젝트
+
+4. 구현 단계 제안
+1) 정적 레이아웃 + 타이포/컬러 톤 잡기
+2) 떠다니는 3D 오브젝트 클러스터(부유 애니메이션)을 위한 핵심 셋업 후 정지 상태로 렌더
+3) 스크롤/인터랙션 연동 (원형 미러가 아케이드풍 쇼릴 화면을 반사하고, 'HIROTO SATO' 태그·'PROJECTS ARCHIVE' 화살표 표지판이 마우스 움직임에 따라 패럴럭스로 부유.)
+4) 디테일 다듬기 (이징, 퍼포먼스, 반응형, prefers-reduced-motion)
+
+5. 검증 출처
+- Live: https://hirotos.com
+- Awwwards Nominee — hiroto-sato
+- 참고 서브작품 TRACK: https://demo-03-track.hirotos.com (별도 Lab 확장 가능)
+
+6. 커서 작업 시 참고
+- Three.js 핵심 → R3F Canvas + useFrame/ScrollTrigger 패턴
+- @react-three/drei 헬퍼는 3D Lab에만 적용
+- 모바일 성능과 prefers-reduced-motion 접근성 대응 확인

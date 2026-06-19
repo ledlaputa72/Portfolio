@@ -1,0 +1,35 @@
+KVS Studio 사이트 실험 기획
+
+레퍼런스: KVS Studio — https://kvs.services
+카테고리: 인터랙티브 포트폴리오 / 크리에이티브 스튜디오
+신뢰도: 부분확인
+난이도: 중
+Three.js 핵심: 아니오 (CSS/DOM/GSAP 중심)
+사이트 경로: /lab/kvs-studio
+Lab 문서: Lab-05-Kvs-Studio-기획
+
+1. 컨셉 / 메시지
+Product Design & Creative Development. 인터랙티브 타이포·게이미피케이션 UI로 premium design partner 포지셔닝.
+
+2. 시그니처 인터랙션
+'CLICK TO BREAK' 등 인터랙티브 UI가 타이포·좌표 HUD와 함께 깨지며 쇼케이스를 전개.
+
+3. 구현할 기술 (Three.js / R3F / GSAP 기준)
+- 인터랙티브 타이포/글리치 UI
+- CLICK TO BREAK 등 마이크로 게임화
+- 커서/터치 인터랙션
+- DOM/GSAP 커스텀 모션
+
+4. 구현 단계 제안
+1) 정적 레이아웃 + 타이포/컬러 톤 잡기
+2) 인터랙티브 타이포/글리치 UI을 위한 핵심 셋업 후 정지 상태로 렌더
+3) 스크롤/인터랙션 연동 ('CLICK TO BREAK' 등 인터랙티브 UI가 타이포·좌표 HUD와 함께 깨지며 쇼케이스를 전개.)
+4) 디테일 다듬기 (이징, 퍼포먼스, 반응형, prefers-reduced-motion)
+
+5. 검증 출처
+- Live: https://kvs.services
+
+6. 커서 작업 시 참고
+- Three.js 핵심 → DOM/CSS/GSAP 우선, WebGL은 보조만
+- @react-three/drei 헬퍼는 3D Lab에만 적용
+- 모바일 성능과 prefers-reduced-motion 접근성 대응 확인

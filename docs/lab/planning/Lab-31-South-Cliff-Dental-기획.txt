@@ -1,0 +1,36 @@
+South Cliff Dental 사이트 실험 기획
+
+레퍼런스: South Cliff Dental — https://southcliffdentalgroup.com
+카테고리: 데이터 시각화 / 특수
+신뢰도: 확인(노미니)
+난이도: 하
+Three.js 핵심: 예
+사이트 경로: /lab/south-cliff-dental
+Lab 문서: Lab-31-South-Cliff-Dental-기획
+
+1. 컨셉 / 메시지
+UK 치과 그룹. immersive fully 3D interactive website — practice locations, services, 3D modelling을 WebGL/Three.js로 탐색.
+
+2. 시그니처 인터랙션
+3D scroll animation과 3D interactive navigation으로 dental practices·locations를 immersive하게 탐색.
+
+3. 구현할 기술 (Three.js / R3F / GSAP 기준)
+- 3D scroll animation
+- 3D interactive navigation
+- practice location 3D model
+- WebGL/Three.js + Next.js
+
+4. 구현 단계 제안
+1) 정적 레이아웃 + 타이포/컬러 톤 잡기
+2) 3D scroll animation을 위한 핵심 셋업 후 정지 상태로 렌더
+3) 스크롤/인터랙션 연동 (3D scroll animation과 3D interactive navigation으로 dental practices·locations를 immersive하게 탐색.)
+4) 디테일 다듬기 (이징, 퍼포먼스, 반응형, prefers-reduced-motion)
+
+5. 검증 출처
+- Live: https://southcliffdentalgroup.com
+- Awwwards Nominee — south-cliff-dental-group
+
+6. 커서 작업 시 참고
+- Three.js 핵심 → R3F Canvas + useFrame/ScrollTrigger 패턴
+- @react-three/drei 헬퍼는 3D Lab에만 적용
+- 모바일 성능과 prefers-reduced-motion 접근성 대응 확인
