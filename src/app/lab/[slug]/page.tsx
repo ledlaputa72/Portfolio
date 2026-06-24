@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { labSites } from "@/data/lab-sites";
 import { labExperiments } from "@/components/lab/experiments/registry";
+import { LabExternalLink, LabSampleLink } from "@/components/lab/LabLinks";
 
 export function generateStaticParams() {
   return labSites.map((site) => ({ slug: site.slug }));
@@ -35,14 +36,12 @@ export default async function LabSitePage({
           {site.title} 스타일 실험
         </h1>
 
-        <a
+        <LabExternalLink
           href={site.url}
-          target="_blank"
-          rel="noopener noreferrer"
           className="mt-2 inline-block text-sm text-accent hover:text-accent-hover"
         >
           {site.url} ↗
-        </a>
+        </LabExternalLink>
 
         <div className="mt-4 flex flex-wrap gap-2">
           <span className="rounded-full border border-border px-3 py-1 text-xs text-text-secondary">
@@ -57,12 +56,12 @@ export default async function LabSitePage({
         </div>
 
         {experiment?.Sample ? (
-          <Link
+          <LabSampleLink
             href={`/lab/${site.slug}/sample`}
             className="mt-6 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
           >
             전체 페이지 샘플 보기 →
-          </Link>
+          </LabSampleLink>
         ) : null}
 
         <div className="mt-10">
@@ -104,12 +103,12 @@ export default async function LabSitePage({
                 <experiment.Demo />
               </div>
               {experiment.Sample ? (
-                <Link
+                <LabSampleLink
                   href={`/lab/${site.slug}/sample`}
                   className="mt-4 inline-block text-sm text-accent hover:text-accent-hover"
                 >
                   전체 페이지 샘플 보기 →
-                </Link>
+                </LabSampleLink>
               ) : null}
             </div>
 

@@ -253,7 +253,7 @@ export const labSites: LabSite[] = [
   {
     slug: "cartier-watches-and-wonders",
     title: "Cartier Watches & Wonders",
-    url: "https://cartier.com/.../watchesandwonders",
+    url: "https://www.cartier.com/en-fr/watchesandwonders",
     category: "brand-experience",
     categoryLabel: BRAND_EXPERIENCE_LABEL,
     confidence: "추정",
@@ -265,7 +265,7 @@ export const labSites: LabSite[] = [
       "스크롤 연동 카메라 도리 인",
       "메탈/유리 PBR 머티리얼",
     ],
-    signature: "스크롤에 따라 카메라가 시계 무브먼트 내부로 줌인.",
+    signature: "스크롤에 따라 alcove 3D 공간이 회전하고, universe 전환 시 중앙 시계 모델이 함께 교체된다.",
     difficulty: "상",
   },
   {
@@ -424,12 +424,12 @@ export const labSites: LabSite[] = [
     concept:
       "C-UAS(대드론) 방산 기업. 보안/방어 이미지를 전달하는 정밀하고 무거운 톤.",
     techniques: [
-      "레이더/탐지 범위 시각화",
+      "로딩 레이더 애니메이션",
+      "스크롤 연동 카메라 돌리(원경→근경)",
       "와이어프레임 드론 3D 모델",
-      "스캔라인 셰이더 효과",
-      "다크 톤 라이팅",
+      "콘텐츠 카드 순차 reveal",
     ],
-    signature: "레이더 스캔처럼 화면을 가로지르는 탐지 범위 애니메이션.",
+    signature: "로딩 레이더 후 스크롤에 따라 원경에서 드론 근접으로 카메라가 이동하고 capability 카드가 등장.",
     difficulty: "상",
   },
   {
@@ -442,12 +442,12 @@ export const labSites: LabSite[] = [
     concept:
       "AI & 블록체인 VC. 네트워크와 자본의 흐름을 추상적 그래프로 시각화.",
     techniques: [
-      "노드/엣지 네트워크 그래프",
-      "파티클 흐름 애니메이션",
-      "스크롤 연동 그래프 확장",
-      "다크 그래디언트 배경",
+      "대각선 섹션 전환 (diagonal wipe)",
+      "헥사곤 3D 코어 hover 분열",
+      "파티클·노드 그래프 hover 분산",
+      "스크롤 연동 네트워크 확장",
     ],
-    signature: "스크롤할수록 네트워크 그래프의 노드가 점점 더 많이 확장.",
+    signature: "스크롤 시 네트워크가 확장되고, 대각선 전환·hover 분열로 VC 챕터가 이어지는 몰입형 3D 경험.",
     difficulty: "중",
   },
   {
