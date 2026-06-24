@@ -1352,3 +1352,81 @@ export function HashgraphParticleVector({ className = "h-48" }: { className?: st
     </LabVectorCard>
   );
 }
+
+export function RsquadMorphVector({ className = "h-48" }: { className?: string }) {
+  return (
+    <LabVectorCard className={`bg-black ${className}`} label="Poly morph">
+      <svg viewBox="0 0 140 90" className="h-full w-full px-6 py-4">
+        <polygon
+          points="70,12 108,45 70,78 32,45"
+          fill="none"
+          stroke="#b8fff0"
+          strokeWidth="0.8"
+          opacity="0.7"
+        />
+        <rect
+          x="42"
+          y="28"
+          width="56"
+          height="34"
+          fill="none"
+          stroke="#ffffff"
+          strokeWidth="0.6"
+          opacity="0.35"
+        />
+        <circle cx="70" cy="45" r="22" fill="none" stroke="#ffffff" strokeWidth="0.4" opacity="0.2" />
+      </svg>
+    </LabVectorCard>
+  );
+}
+
+export function RsquadWireVector({ className = "h-48" }: { className?: string }) {
+  return (
+    <LabVectorCard className={`bg-black ${className}`} label="Wireframe cage">
+      <svg viewBox="0 0 140 90" className="h-full w-full px-6 py-4">
+        <polygon points="70,15 95,35 85,65 55,65 45,35" fill="none" stroke="#b8fff0" strokeWidth="0.7" />
+        <line x1="70" y1="15" x2="70" y2="72" stroke="#ffffff" strokeWidth="0.4" opacity="0.4" />
+        <line x1="45" y1="35" x2="95" y2="35" stroke="#ffffff" strokeWidth="0.4" opacity="0.35" />
+        <line x1="55" y1="65" x2="85" y2="65" stroke="#ffffff" strokeWidth="0.4" opacity="0.35" />
+        <circle cx="70" cy="45" r="2" fill="#b8fff0" opacity="0.8" />
+      </svg>
+    </LabVectorCard>
+  );
+}
+
+export function AirTowerVector({ className = "h-48" }: { className?: string }) {
+  return (
+    <LabVectorCard className={`bg-[#f3f1ec] ${className}`} label="Twisted tower">
+      <svg viewBox="0 0 140 90" className="h-full w-full px-8 py-3">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <rect
+            key={i}
+            x={52 + i * 2}
+            y={72 - i * 11}
+            width={36 - i * 1.5}
+            height={8}
+            fill="#b4c9de"
+            stroke="#8e9aa8"
+            strokeWidth="0.4"
+            opacity={0.55 + i * 0.07}
+            transform={`rotate(${-4 + i * 3} ${70} ${76 - i * 11})`}
+          />
+        ))}
+      </svg>
+    </LabVectorCard>
+  );
+}
+
+export function AirFloorVector({ className = "h-48" }: { className?: string }) {
+  return (
+    <LabVectorCard className={`bg-[#f3f1ec] ${className}`} label="Floor scrub">
+      <svg viewBox="0 0 140 90" className="h-full w-full px-6 py-4">
+        <rect x="48" y="20" width="44" height="8" rx="1" fill="#b4c9de" opacity="0.35" />
+        <rect x="50" y="32" width="40" height="8" rx="1" fill="#b4c9de" opacity="0.5" />
+        <rect x="52" y="44" width="36" height="8" rx="1" fill="#b4c9de" opacity="0.65" />
+        <rect x="54" y="56" width="32" height="8" rx="1" fill="#d4e6f8" stroke="#3d5a78" strokeWidth="0.6" />
+        <rect x="56" y="68" width="28" height="8" rx="1" fill="#b4c9de" opacity="0.4" />
+      </svg>
+    </LabVectorCard>
+  );
+}

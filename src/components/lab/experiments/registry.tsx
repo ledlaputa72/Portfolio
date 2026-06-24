@@ -19,6 +19,18 @@ import ArmoryRadarScan from "./ArmoryRadarScan";
 import ArmorySample from "./ArmorySample";
 import HashgraphVenturesNetwork from "./HashgraphVenturesNetwork";
 import HashgraphVenturesSample from "./HashgraphVenturesSample";
+import RsquadGeometryMorph from "./RsquadGeometryMorph";
+import RsquadSample from "./RsquadSample";
+import AirBusinessCenterFloors from "./AirBusinessCenterFloors";
+import AirBusinessCenterSample from "./AirBusinessCenterSample";
+import ReventadorCarbonCurve from "./ReventadorCarbonCurve";
+import ReventadorSample from "./ReventadorSample";
+import PodiumVideoScrub from "./PodiumVideoScrub";
+import PodiumSample from "./PodiumSample";
+import TowerArchitecturalDoors from "./TowerArchitecturalDoors";
+import TowerArchitecturalDoorsSample from "./TowerArchitecturalDoorsSample";
+import FabricsProtectionWeave from "./FabricsProtectionWeave";
+import FabricsProtectionSample from "./FabricsProtectionSample";
 import CartierWatchZoom from "./CartierWatchZoom";
 import CartierWatchSample from "./CartierWatchSample";
 import IzanamiFogReveal from "./IzanamiFogReveal";
@@ -167,21 +179,162 @@ const o = panelOpacity(horizP, panelIndex, 3);`,
     Sample: HashgraphVenturesSample,
     notes: {
       libraries: [
-        "@react-three/fiber — crystal shards + particle figure + water shader",
-        "CSS diagonal split — hard screen transition on scroll",
-        "LabStickyScroll — 5-chapter cinematic journey (920vh)",
+        "@react-three/fiber — particle shard / shattered / humanoid / cone",
+        "Full-viewport diagonal push-up transition (clip-path)",
+        "LabStickyScroll — 4 cinematic chapters (920vh)",
       ],
       points: [
-        "Hero: reflective water + emissive crystal cluster over mist.",
-        "Diagonal split overlay + particle stream at section boundaries.",
-        "Hover: 56 shards burst outward + 2200 figure particles repulse.",
-        "//01–//03 copy + portfolio tags + team crossfade (reference layout).",
+        "Each chapter is a full-screen scene — not a framed viewport.",
+        "Scroll: next screen pushes up, diagonal seam wipes over previous.",
+        "Hero shard → shattered cluster → humanoid → cone particle shapes.",
+        "Hover repulses particles; transition adds falling particle stream.",
       ],
       snippet: {
-        label: "hover → 샤드 분열",
-        code: `const repulse = hover * max(0, 2.2 - dist) * 0.22;
-shard.vel.add(burstDir.multiplyScalar(explode * 0.018));
-shard.vel.add(home.sub(pos).multiplyScalar(0.035));`,
+        label: "대각선 전체 화면 전환",
+        code: `const pushY = lerp(18, 0, smoothstep(t));
+incoming.style.clipPath = incomingClip(t);
+outgoing.style.clipPath = outgoingClip(t);`,
+      },
+    },
+  },
+  rsquad: {
+    Demo: RsquadGeometryMorph,
+    Sample: RsquadSample,
+    notes: {
+      libraries: [
+        "@react-three/fiber — particle shell + EdgesGeometry wireframe",
+        "Scroll-driven polyhedron morph (5 platonic solids)",
+        "LabStickyScroll — Clarke narrative chapters (720vh)",
+      ],
+      points: [
+        "Black/white rsquad.io palette — cyan wire accent (#b8fff0).",
+        "4500 particles morph tetra → cube → octa → icosa → dodeca on scroll.",
+        "EdgesGeometry cage raycast-morphs in sync with particle shell.",
+        "Glitch typography on section change; pointer parallax on 3D group.",
+      ],
+      snippet: {
+        label: "스크롤 → 기하 모핑",
+        code: `const { from, to, t } = morphState(progress);
+sampleMorph(buffers, from, to, t, count, workPos);
+// wire: raycastPolyhedron(dir, geo, r) per edge vertex`,
+      },
+    },
+  },
+  "air-business-center": {
+    Demo: AirBusinessCenterFloors,
+    Sample: AirBusinessCenterSample,
+    notes: {
+      libraries: [
+        "@react-three/fiber — meshPhysicalMaterial glass towers",
+        "Scroll floor reveal + explode offset per slab",
+        "LabStickyScroll — 580vh premium real-estate chapters",
+      ],
+      points: [
+        "Hero: oversized A/I/R cropped at viewport — letters spread and fade on scroll.",
+        "Center ribbed sculpture rotates, then crossfades to three twisted towers.",
+        "Camera dollies from typographic framing into floor-by-floor tower scrub.",
+        "White editorial chapters — Class (A) hero → momentum → facade → lobby.",
+      ],
+      snippet: {
+        label: "스크롤 → 층별 전환",
+        code: `const reveal = clamp01((progress - 0.48) / 0.38);
+const active = floor(reveal * (floors - 1));
+const explode = clamp01((reveal - floorT) * floors) * 0.2;
+// emissiveIntensity peaks on active floor slab`,
+      },
+    },
+  },
+  reventador: {
+    Demo: ReventadorCarbonCurve,
+    Sample: ReventadorSample,
+    notes: {
+      libraries: [
+        "Full-viewport chapter slide-up — 9 editorial sections (2600vh)",
+        "ScreenFrame bezel — carbon SVG chart inside monitor mockup",
+        "Light/dark layout alternation + scroll-scrubbed module tabs & process steps",
+      ],
+      points: [
+        "2600vh sticky — hero → benefits ticker → 3 pillars → SmartZero monitor → module hub → 4-step → vs alternatives → stats → CTA.",
+        "Chart only renders inside ScreenFrame — scroll bends emissions curve during SmartZero chapter.",
+        "Benefits, modules and process steps crossfade by scroll index — mimics parallax copy swaps.",
+        "Alternating BG_LIGHT / BG_DARK chapters — reventador.global page rhythm.",
+      ],
+      snippet: {
+        label: "챕터 슬라이드업",
+        code: `const riseSmartZero = panelRise(progress, 0.28, 0.4);
+<ChapterSlide rise={riseSmartZero} zIndex={40}>
+  <ScreenFrame><CarbonChart reduction={reduction} /></ScreenFrame>
+</ChapterSlide>`,
+      },
+    },
+  },
+  podium: {
+    Demo: PodiumVideoScrub,
+    Sample: PodiumSample,
+    notes: {
+      libraries: [
+        "GLSL sports film shader — scroll-scrubbed multi-clip blend",
+        "@react-three/fiber — PodiumMonolith (3-beat visibility) + MosaicCluster",
+        "LabStickyScroll — 3200vh continuous sequence + chapter slide-up",
+      ],
+      points: [
+        "3D object: visible at 20–40%, 44–62%, 74–96% scroll — hide between beats (Codrops footer object).",
+        "WebGL mosaic: tilted planes spread on Work chapter — replaces flat CSS stills.",
+        "PodiumMonolith: tiered steps + dual torus rings, camera shifts per phase.",
+        "Film layer dims when 3D/mosaic active — layered WebGL + DOM chapters.",
+      ],
+      snippet: {
+        label: "스크롤 → 영상 스크럽",
+        code: `scrubRef.current = easeOut(smoothstep(0.04, 0.78, progress));
+// shader: seg = uScrub * 4.0 — crossfade trail/speed/mountain/night
+video.currentTime = duration * progress; // ref pattern`,
+      },
+    },
+  },
+  "tower-architectural-doors": {
+    Demo: TowerArchitecturalDoors,
+    Sample: TowerArchitecturalDoorsSample,
+    notes: {
+      libraries: [
+        "@react-three/fiber + drei RoundedBox — TA8™ aluminum frame assembly",
+        "Scroll-scrubbed explode offsets per part (frame, seal, hinge, cladding)",
+        "LabStickyScroll — 3000vh load counter + 9 chapter crossfade",
+      ],
+      points: [
+        "0→100% welcome load overlay — fades before hero (towerdoors.com.au).",
+        "Sticky WebGL door scrubs explode 0→peak→reassemble while HTML chapters crossfade left.",
+        "Milestone rail 0·15·27·35·55·70·87·95·100 — scroll % sync.",
+        "Active part emissive pulse on frame / seal / hinge / cladding chapters.",
+      ],
+      snippet: {
+        label: "스크롤 → 분해도",
+        code: `const e = rise * fall; // peak mid-scroll, reassemble end
+leftFrame.position.x = lerp(0, -0.95, e);
+sealGroup.position.z = lerp(0.02, 0.55, e);
+hingeGroup.rotation.z = lerp(0, 0.35, e);`,
+      },
+    },
+  },
+  "fabrics-protection": {
+    Demo: FabricsProtectionWeave,
+    Sample: FabricsProtectionSample,
+    notes: {
+      libraries: [
+        "GLSL macro fabric weave shader — replaces background video (en.protection.gr)",
+        "@react-three/fiber — displaced plane + scroll-driven uProtection uniform",
+        "LabStickyScroll — 2900vh chapter slide-up + lotus effect simulation",
+      ],
+      points: [
+        "Scroll 0→1 drives water repellency — stains fade, droplets bead and roll off.",
+        "Macro camera zooms into weave as scroll progresses — pointer parallax on fabric.",
+        "Chapters: Fabrics · Applications · Technology · specs · heritage · contact.",
+        "Technical data rail: waterproof 100%, spray grade 5, UPF 80, GTOT 0.04.",
+      ],
+      snippet: {
+        label: "스크롤 → 로터스 이펙트",
+        code: `protectionRef.current = easeInOut(smoothstep(0.18, 0.72, progress));
+// shader: droplets roll up as uProtection rises
+drops += drop(uv, center, r) * smoothstep(0.2, 0.55, uProtection);`,
       },
     },
   },

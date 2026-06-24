@@ -34,9 +34,8 @@ export default function HashgraphVenturesSample() {
           <span style={{ color: "#9bb8e1" }}>of venture capital</span>
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-[#9bb8e1]/90">
-          레퍼런스처럼 수면 위 크리스탈 샤드, 대각선 화면 분할, 스크롤 시 파티클
-          휴머노이드·낙하 스트림, hover 시 샤드·파티클 분열. //01–//03 챕터 전체
-          구성.
+          액자가 아닌 전체 화면 챕터가 스크롤 시 대각선 경계로 밀어 올려지며 전환됩니다.
+          챕터마다 파티클 형태(샤드·파편·휴머노이드·원뿔)가 교체되고 hover 시 분산됩니다.
         </p>
         <ul className="mt-8 space-y-2 text-xs text-[#5f87b9]/80">
           {PILLARS.map((line) => (
