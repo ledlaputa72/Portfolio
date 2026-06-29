@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import FadeInSection from "@/components/FadeInSection";
 import { labSites, type LabSite } from "@/data/lab-sites";
-import { readLabFavorites, sortByLabFavorites, toggleLabFavorite } from "@/lib/lab-favorites";
+import { readLabFavorites, readLabFavoritesOnly, sortByLabFavorites, toggleLabFavorite, writeLabFavoritesOnly } from "@/lib/lab-favorites";
 
 const CATEGORY_ORDER: LabSite["category"][] = [
   "interactive-portfolio",
@@ -141,10 +141,16 @@ export default function LabPageContent() {
 
   useEffect(() => {
     setFavorites(readLabFavorites());
+    setFavoritesOnly(readLabFavoritesOnly());
   }, []);
 
   const handleToggleFavorite = useCallback((slug: string) => {
     setFavorites(toggleLabFavorite(slug));
+  }, []);
+
+  const handleFavoritesOnlyChange = useCallback((enabled: boolean) => {
+    setFavoritesOnly(enabled);
+    writeLabFavoritesOnly(enabled);
   }, []);
 
   const grouped = useMemo(() => {
@@ -174,7 +180,7 @@ export default function LabPageContent() {
           </h1>
           <FavoritesOnlyToggle
             enabled={favoritesOnly}
-            onChange={setFavoritesOnly}
+            onChange={handleFavoritesOnlyChange}
             count={favoriteCount}
           />
         </div>

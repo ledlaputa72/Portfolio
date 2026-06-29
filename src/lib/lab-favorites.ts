@@ -1,4 +1,5 @@
 const STORAGE_KEY = "lab-favorites";
+const FILTER_KEY = "lab-favorites-only-filter";
 
 export function readLabFavorites(): string[] {
   if (typeof window === "undefined") return [];
@@ -32,4 +33,23 @@ export function sortByLabFavorites<T extends { slug: string }>(items: T[], favor
     .filter((item): item is T => item !== undefined);
   const rest = items.filter((item) => !favoriteSet.has(item.slug));
   return [...favorited, ...rest];
+}
+
+export function readLabFavoritesOnly(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(FILTER_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+export function writeLabFavoritesOnly(enabled: boolean): boolean {
+  if (typeof window === "undefined") return enabled;
+  try {
+    localStorage.setItem(FILTER_KEY, enabled ? "true" : "false");
+  } catch {
+    /* ignore quota / private mode */
+  }
+  return enabled;
 }
