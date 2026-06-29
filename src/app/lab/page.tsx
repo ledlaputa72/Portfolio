@@ -1,29 +1,6 @@
-import Link from "next/link";
-import FadeInSection from "@/components/FadeInSection";
-import { labSites, type LabSite } from "@/data/lab-sites";
-
-const CATEGORY_ORDER: LabSite["category"][] = [
-  "interactive-portfolio",
-  "brand-experience",
-  "b2b-tech",
-  "data-viz",
-];
-
-const difficultyColor: Record<LabSite["difficulty"], string> = {
-  상: "bg-red-500/10 text-red-400 border-red-500/30",
-  중: "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
-  하: "bg-green-500/10 text-green-400 border-green-500/30",
-};
+import LabSiteGrid from "@/components/lab/LabSiteGrid";
 
 export default function LabPage() {
-  const grouped = CATEGORY_ORDER.map((category) => ({
-    category,
-    categoryLabel:
-      labSites.find((site) => site.category === category)?.categoryLabel ??
-      category,
-    sites: labSites.filter((site) => site.category === category),
-  }));
-
   return (
     <main className="flex flex-1 flex-col">
       <section className="mx-auto w-full max-w-[1200px] px-6 py-16">
@@ -38,42 +15,7 @@ export default function LabPage() {
         </p>
       </section>
 
-      {grouped.map(({ category, categoryLabel, sites }) => (
-        <FadeInSection
-          key={category}
-          className="mx-auto w-full max-w-[1200px] px-6 py-12"
-        >
-          <h2 className="text-xl font-bold text-text-primary">
-            {categoryLabel}
-          </h2>
-          <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {sites.map((site) => (
-              <Link
-                key={site.slug}
-                href={`/lab/${site.slug}`}
-                className="group flex flex-col rounded-lg border border-border bg-bg-secondary p-5 transition-colors hover:border-accent"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="font-semibold text-text-primary group-hover:text-accent">
-                    {site.title}
-                  </h3>
-                  <span
-                    className={`shrink-0 rounded-full border px-2 py-0.5 text-xs ${difficultyColor[site.difficulty]}`}
-                  >
-                    {site.difficulty}
-                  </span>
-                </div>
-                <span className="mt-1 inline-block w-fit rounded-full border border-border px-2 py-0.5 text-xs text-text-muted">
-                  {site.confidence}
-                </span>
-                <p className="mt-3 line-clamp-2 text-sm text-text-secondary">
-                  {site.concept}
-                </p>
-              </Link>
-            ))}
-          </div>
-        </FadeInSection>
-      ))}
+      <LabSiteGrid />
     </main>
   );
 }

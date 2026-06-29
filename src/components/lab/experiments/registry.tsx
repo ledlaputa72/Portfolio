@@ -31,6 +31,12 @@ import TowerArchitecturalDoors from "./TowerArchitecturalDoors";
 import TowerArchitecturalDoorsSample from "./TowerArchitecturalDoorsSample";
 import FabricsProtectionWeave from "./FabricsProtectionWeave";
 import FabricsProtectionSample from "./FabricsProtectionSample";
+import WorldCup2026DataViz from "./WorldCup2026DataViz";
+import WorldCup2026Sample from "./WorldCup2026Sample";
+import SouthCliffDentalExplore from "./SouthCliffDentalExplore";
+import SouthCliffDentalSample from "./SouthCliffDentalSample";
+import ClimaNovaEnergyFlow from "./ClimaNovaEnergyFlow";
+import ClimaNovaSample from "./ClimaNovaSample";
 import CartierWatchZoom from "./CartierWatchZoom";
 import CartierWatchSample from "./CartierWatchSample";
 import IzanamiFogReveal from "./IzanamiFogReveal";
@@ -335,6 +341,78 @@ hingeGroup.rotation.z = lerp(0, 0.35, e);`,
         code: `protectionRef.current = easeInOut(smoothstep(0.18, 0.72, progress));
 // shader: droplets roll up as uProtection rises
 drops += drop(uv, center, r) * smoothstep(0.2, 0.55, uProtection);`,
+      },
+    },
+  },
+  "world-cup-2026": {
+    Demo: WorldCup2026DataViz,
+    Sample: WorldCup2026Sample,
+    notes: {
+      libraries: [
+        "SVG host-city map — 16 pins with nation colour coding (USA · Mexico · Canada)",
+        "React state filter — team / city / nation clicks reconfigure fixtures + groups",
+        "LabStickyScroll — 3000vh editorial chapters (sheets.works data-viz)",
+      ],
+      points: [
+        "Signature: click stadium or team → fixture list and group grid filter dynamically.",
+        "Scroll chapters: Azteca opener → stats → Argentina → hosts map → legends → Dallas heat → mascots → 12 groups → MetLife final.",
+        "48 nations · 16 cities · 104 matches · 39 days — count-up on scroll reveal.",
+        "Clay-card mascots + debutant chips — warm editorial palette matching reference.",
+      ],
+      snippet: {
+        label: "클릭 → 데이터 필터",
+        code: `const filtered = FIXTURES.filter((m) => {
+  if (selectedCity && m.city !== selectedCity) return false;
+  if (selectedTeam && m.home !== team && m.away !== team) return false;
+  return nationMatchesCity(m.city, filterNation);
+});`,
+      },
+    },
+  },
+  "south-cliff-dental": {
+    Demo: SouthCliffDentalExplore,
+    Sample: SouthCliffDentalSample,
+    notes: {
+      libraries: [
+        "@react-three/fiber + drei RoundedBox — low-poly practice buildings + dental chair",
+        "Scroll-scrubbed camera path — lobby through 5 regional practices",
+        "LabStickyScroll — 2800vh chapters + click-to-fly location navigation",
+      ],
+      points: [
+        "Signature: click location pin or list item — camera lerps to that practice in 3D.",
+        "5 practices: West Sussex · East Sussex · Kent · Hampshire · Wiltshire.",
+        "Chapters: treatments · emergency · +546K stats · locations · book CTA.",
+        "Tooth icon + chair props per building — clinical teal/navy palette.",
+      ],
+      snippet: {
+        label: "클릭 → 3D 네비게이션",
+        code: `focusPos.set(practice.x + 2.5, 1.8, practice.z + 3);
+focusLook.set(practice.x, 1.2, practice.z);
+targetPos.lerp(focusPos, focusBlend * 0.85);
+camera.position.lerp(targetPos, 0.07);`,
+      },
+    },
+  },
+  climanova: {
+    Demo: ClimaNovaEnergyFlow,
+    Sample: ClimaNovaSample,
+    notes: {
+      libraries: [
+        "LabStickyScroll — 3400vh stacked panel slide-up (bottom → top)",
+        "SVG isometric illustrations — house hero · solar system · module stack",
+        "SplitBlock — text and visual rise on staggered scroll offsets (cross parallax)",
+      ],
+      points: [
+        "Signature: each chapter panel translates up from 108% — light hero → warm day → navy night.",
+        "12 sections in reference order — jour · pointe · nuit · système · modules · essentials · CTA.",
+        "No WebGL particles — matches climanovaquebec.com editorial scroll storytelling.",
+        "Teal accent + navy dramatic beats — ClimaLogo glow on dark chapters.",
+      ],
+      snippet: {
+        label: "패널 슬라이드업",
+        code: `const panelRise = easeInOut(smoothstep(start, end, progress));
+transform: translateY(lerp(108, 0, panelRise) + '%');
+// textRise vs visualRise offset → cross-scroll`,
       },
     },
   },
