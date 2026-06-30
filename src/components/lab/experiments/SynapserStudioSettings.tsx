@@ -3,6 +3,9 @@
 import { SYNAPSER_SCENES, useSynapserModel } from "./SynapserModelContext";
 import SynapserModelSettings from "./SynapserModelSettings";
 import SynapserSceneSettingsPanel from "./SynapserSceneSettingsPanel";
+import SynapserScrollGlitchSettings from "./SynapserScrollGlitchSettings";
+import { TipField } from "./SynapserSettingControls";
+import { MODEL_SETTING_TIPS } from "./synapser-setting-tips";
 
 type SynapserStudioSettingsProps = {
   compact?: boolean;
@@ -14,10 +17,7 @@ export default function SynapserStudioSettings({ compact = false }: SynapserStud
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-[#2a2520] bg-[#14100d]/70 px-4 py-3">
-        <label className="block">
-          <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#c9a66b]/80">
-            Active Scene
-          </span>
+        <TipField label="Active Scene" tip={MODEL_SETTING_TIPS.activeScene}>
           <select
             value={selectedScene}
             onChange={(e) => setSelectedScene(e.target.value as typeof selectedScene)}
@@ -32,13 +32,14 @@ export default function SynapserStudioSettings({ compact = false }: SynapserStud
               );
             })}
           </select>
-        </label>
+        </TipField>
         <p className="mt-2 text-[11px] leading-relaxed text-[#f0ebe3]/35">
           선택한 씬에 3D 모델 · 조명 · 배경 · 카메라 설정이 적용됩니다.
         </p>
       </div>
 
       <SynapserModelSettings compact={compact} hideSceneSelect />
+      <SynapserScrollGlitchSettings />
       <SynapserSceneSettingsPanel compact={compact} />
     </div>
   );

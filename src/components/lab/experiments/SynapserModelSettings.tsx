@@ -2,6 +2,8 @@
 
 import { useRef } from "react";
 import { SYNAPSER_SCENES, useSynapserModel } from "./SynapserModelContext";
+import { SettingTip, TipField, TipRangeRow } from "./SynapserSettingControls";
+import { MODEL_SETTING_TIPS } from "./synapser-setting-tips";
 import { SYNAPSER_MODEL_ACCEPT } from "@/lib/synapser-model-store";
 
 type SynapserModelSettingsProps = {
@@ -44,23 +46,22 @@ export default function SynapserModelSettings({
           </p>
 
           {!hideSceneSelect ? (
-          <label className="mt-3 block">
-            <span className="text-[10px] uppercase tracking-wider text-[#f0ebe3]/40">씬 선택</span>
-            <select
-              value={selectedScene}
-              onChange={(e) => setSelectedScene(e.target.value as typeof selectedScene)}
-              className="mt-1.5 w-full max-w-xs rounded-lg border border-[#2a2520] bg-[#0f0c0a] px-3 py-2 text-sm text-[#f0ebe3] outline-none transition-colors focus:border-[#c9a66b]/50"
-            >
-              {SYNAPSER_SCENES.map((scene) => {
-                const hasCustom = scenes[scene.id].mode === "custom";
-                return (
-                  <option key={scene.id} value={scene.id}>
-                    {scene.label} ({scene.defaultObject}){hasCustom ? " · 커스텀" : ""}
-                  </option>
-                );
-              })}
-            </select>
-          </label>
+          <TipField label="씬 선택" tip={MODEL_SETTING_TIPS.sceneSelect}>
+          <select
+            value={selectedScene}
+            onChange={(e) => setSelectedScene(e.target.value as typeof selectedScene)}
+            className="mt-1.5 w-full max-w-xs rounded-lg border border-[#2a2520] bg-[#0f0c0a] px-3 py-2 text-sm text-[#f0ebe3] outline-none transition-colors focus:border-[#c9a66b]/50"
+          >
+            {SYNAPSER_SCENES.map((scene) => {
+              const hasCustom = scenes[scene.id].mode === "custom";
+              return (
+                <option key={scene.id} value={scene.id}>
+                  {scene.label} ({scene.defaultObject}){hasCustom ? " · 커스텀" : ""}
+                </option>
+              );
+            })}
+          </select>
+          </TipField>
           ) : null}
 
           <p className="mt-2 text-sm text-[#f0ebe3]/70">
@@ -80,29 +81,35 @@ export default function SynapserModelSettings({
           ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="rounded-full border border-[#c9a66b]/40 px-4 py-2 text-xs uppercase tracking-wider text-[#f0ebe3] transition-colors hover:border-[#c9a66b]"
-          >
-            불러오기
-          </button>
-          <button
-            type="button"
-            disabled={!canSave}
-            onClick={() => saveModel()}
-            className="rounded-full border border-[#6b8cce]/40 px-4 py-2 text-xs uppercase tracking-wider text-[#f0ebe3] transition-colors hover:border-[#6b8cce] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            저장
-          </button>
-          <button
-            type="button"
-            disabled={mode === "default"}
-            onClick={() => resetModel()}
-            className="rounded-full border border-[#f0ebe3]/15 px-4 py-2 text-xs uppercase tracking-wider text-[#f0ebe3]/60 transition-colors hover:border-[#f0ebe3]/35 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            기본값
-          </button>
+          <SettingTip tip={MODEL_SETTING_TIPS.load}>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="cursor-help rounded-full border border-[#c9a66b]/40 px-4 py-2 text-xs uppercase tracking-wider text-[#f0ebe3] transition-colors hover:border-[#c9a66b]"
+            >
+              불러오기
+            </button>
+          </SettingTip>
+          <SettingTip tip={MODEL_SETTING_TIPS.save}>
+            <button
+              type="button"
+              disabled={!canSave}
+              onClick={() => saveModel()}
+              className="cursor-help rounded-full border border-[#6b8cce]/40 px-4 py-2 text-xs uppercase tracking-wider text-[#f0ebe3] transition-colors hover:border-[#6b8cce] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              저장
+            </button>
+          </SettingTip>
+          <SettingTip tip={MODEL_SETTING_TIPS.reset}>
+            <button
+              type="button"
+              disabled={mode === "default"}
+              onClick={() => resetModel()}
+              className="cursor-help rounded-full border border-[#f0ebe3]/15 px-4 py-2 text-xs uppercase tracking-wider text-[#f0ebe3]/60 transition-colors hover:border-[#f0ebe3]/35 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              기본값
+            </button>
+          </SettingTip>
         </div>
       </div>
 
@@ -119,19 +126,16 @@ export default function SynapserModelSettings({
       />
 
       {mode === "custom" ? (
-        <label className="mt-4 flex items-center gap-3 text-xs text-[#f0ebe3]/55">
-          <span className="whitespace-nowrap uppercase tracking-wider">Scale</span>
-          <input
-            type="range"
-            min={0.25}
-            max={3}
-            step={0.05}
-            value={scale}
-            onChange={(e) => setScale(Number(e.target.value))}
-            className="w-full max-w-xs accent-[#c9a66b]"
-          />
-          <span className="font-mono tabular-nums">{scale.toFixed(2)}</span>
-        </label>
+        <TipRangeRow
+          label="Scale"
+          tip={MODEL_SETTING_TIPS.scale}
+          labelWidth="w-20"
+          value={scale}
+          min={0.25}
+          max={3}
+          step={0.05}
+          onChange={setScale}
+        />
       ) : null}
 
       <p className="mt-3 text-[11px] leading-relaxed text-[#f0ebe3]/35">

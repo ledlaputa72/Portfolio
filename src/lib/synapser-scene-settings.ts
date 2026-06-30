@@ -1,4 +1,5 @@
 import type { SynapserSceneId } from "./synapser-model-store";
+import { migrateObjectMotionValue } from "./synapser-object-motion";
 
 export type { SynapserSceneId };
 
@@ -54,8 +55,20 @@ export type SynapserSceneSettings = {
     fov: number;
     position: Vec3;
     lookAt: Vec3;
+    /** Mouse-edge yaw orbit strength (left/right). */
     pointerDriftX: number;
+    /** Mouse-edge pitch orbit strength (up/down, inverted). */
     pointerDriftY: number;
+    /** Camera pull toward look-at on object hover (0–1). */
+    hoverZoomPull: number;
+    /** FOV reduction on object hover. */
+    hoverZoomFovPull: number;
+    /** Hover zoom in/out smoothing speed. */
+    hoverZoomDamp: number;
+    /** Pointer orbit smoothing speed. */
+    orbitDamp: number;
+    /** Edge emphasis curve (lower = stronger at screen edges). */
+    orbitEdgePower: number;
     lerpSpeed: number;
     near: number;
     far: number;
@@ -131,9 +144,9 @@ function sceneDefaults(
     },
     objectMotion: {
       floatEnabled: true,
-      floatSpeed: 1.4,
-      rotationIntensity: 0.4,
-      floatIntensity: 0.5,
+      floatSpeed: 0.12,
+      rotationIntensity: 0.08,
+      floatIntensity: 0.15,
       autoRotateX: 0,
       autoRotateY: 0,
       autoRotateZ: 0,
@@ -148,6 +161,11 @@ function sceneDefaults(
       lookAt: [0, 0, 0],
       pointerDriftX: 0.45,
       pointerDriftY: 0.25,
+      hoverZoomPull: 0.42,
+      hoverZoomFovPull: 3.5,
+      hoverZoomDamp: 7,
+      orbitDamp: 8,
+      orbitEdgePower: 0.82,
       lerpSpeed: 0.06,
       near: 0.1,
       far: 100,
@@ -193,11 +211,11 @@ function sceneDefaults(
 export const DEFAULT_SYNAPSER_SCENE_SETTINGS: SynapserSceneSettingsMap = {
   manifesto: sceneDefaults({
     background: { canvasColor: "#0a1c4d", fogColor: "#0a1c4d", fogEnabled: false },
-    objectMotion: { floatSpeed: 1.2, rotationIntensity: 0.25, floatIntensity: 0.35, floatEnabled: false },
+    objectMotion: { floatSpeed: 0.1, rotationIntensity: 0.06, floatIntensity: 0.12, floatEnabled: false },
   }),
   archive: sceneDefaults({
     background: { canvasColor: "#0f0c0a", fogColor: "#0f0c0a" },
-    objectMotion: { floatSpeed: 1.1, rotationIntensity: 0.25, floatIntensity: 0.35, groupOffset: [0, -0.2, 0], floatEnabled: false },
+    objectMotion: { floatSpeed: 0.1, rotationIntensity: 0.06, floatIntensity: 0.12, groupOffset: [0, -0.2, 0], floatEnabled: false },
     lighting: {
       ambientIntensity: 0.4,
       ambientColor: "#e8edf5",
@@ -209,7 +227,7 @@ export const DEFAULT_SYNAPSER_SCENE_SETTINGS: SynapserSceneSettingsMap = {
   }),
   journey: sceneDefaults({
     background: { canvasColor: "#060810", fogColor: "#060810", fogFar: 16 },
-    objectMotion: { floatSpeed: 0.9, rotationIntensity: 0.2, floatIntensity: 0.3, floatEnabled: false },
+    objectMotion: { floatSpeed: 0.08, rotationIntensity: 0.05, floatIntensity: 0.1, floatEnabled: false },
   }),
 };
 
@@ -217,12 +235,28 @@ function deepCloneSettings(map: SynapserSceneSettingsMap): SynapserSceneSettings
   return JSON.parse(JSON.stringify(map)) as SynapserSceneSettingsMap;
 }
 
+function normalizeObjectMotion(
+  motion: Partial<SynapserSceneSettings["objectMotion"]>,
+  defaults: SynapserSceneSettings["objectMotion"],
+): SynapserSceneSettings["objectMotion"] {
+  const merged = { ...defaults, ...motion };
+  return {
+    ...merged,
+    floatSpeed: migrateObjectMotionValue("floatSpeed", merged.floatSpeed),
+    rotationIntensity: migrateObjectMotionValue("rotationIntensity", merged.rotationIntensity),
+    floatIntensity: migrateObjectMotionValue("floatIntensity", merged.floatIntensity),
+    autoRotateX: migrateObjectMotionValue("autoRotateX", merged.autoRotateX),
+    autoRotateY: migrateObjectMotionValue("autoRotateY", merged.autoRotateY),
+    autoRotateZ: migrateObjectMotionValue("autoRotateZ", merged.autoRotateZ),
+  };
+}
+
 function mergeSceneSettings(partial: Partial<SynapserSceneSettings>): SynapserSceneSettings {
   const defaults = sceneDefaults();
   return {
     lighting: { ...defaults.lighting, ...partial.lighting, lights: partial.lighting?.lights ?? defaults.lighting.lights },
     background: { ...defaults.background, ...partial.background },
-    objectMotion: { ...defaults.objectMotion, ...partial.objectMotion },
+    objectMotion: normalizeObjectMotion(partial.objectMotion ?? {}, defaults.objectMotion),
     camera: { ...defaults.camera, ...partial.camera },
     cameraAnimation: {
       ...defaults.cameraAnimation,
@@ -336,8 +370,6 @@ export function cinematicZoomT(
 export function getCinematicCamera(
   settings: SynapserSceneSettings,
   zoomT: number,
-  pointerX: number,
-  pointerY: number,
 ): { position: Vec3; lookAt: Vec3; fov: number } {
   const cfg = settings.cinematicScroll;
   const cam = settings.camera;
@@ -346,11 +378,7 @@ export function getCinematicCamera(
   const height = cam.position[1];
 
   return {
-    position: [
-      pointerX * cam.pointerDriftX,
-      height + pointerY * cam.pointerDriftY,
-      dist,
-    ],
+    position: [0, height, dist],
     lookAt,
     fov: cam.fov,
   };

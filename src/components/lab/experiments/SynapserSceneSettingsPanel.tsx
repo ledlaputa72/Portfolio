@@ -1,7 +1,16 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { SYNAPSER_SCENES, useSynapserModel } from "./SynapserModelContext";
+import SynapserColorPicker from "./SynapserColorPicker";
+import {
+  SettingTip,
+  TipCheckboxRow,
+  TipField,
+  TipRangeRow,
+  TipSection,
+} from "./SynapserSettingControls";
+import { SCENE_SETTING_TIPS } from "./synapser-setting-tips";
 import {
   MAX_SCENE_LIGHTS,
   type SynapserCameraKeyframe,
@@ -14,39 +23,8 @@ type SynapserSceneSettingsPanelProps = {
   compact?: boolean;
 };
 
-function Section({
-  title,
-  open,
-  onToggle,
-  children,
-}: {
-  title: string;
-  open: boolean;
-  onToggle: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <div className="border-t border-[#2a2520] pt-3">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center justify-between text-left text-xs uppercase tracking-wider text-[#f0ebe3]/70"
-      >
-        {title}
-        <span className="text-[#c9a66b]/60">{open ? "−" : "+"}</span>
-      </button>
-      {open ? <div className="mt-3 space-y-3">{children}</div> : null}
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block text-[11px] text-[#f0ebe3]/50">
-      <span className="mb-1 block uppercase tracking-wider">{label}</span>
-      {children}
-    </label>
-  );
+function ColorField({ value, onChange }: { value: string; onChange: (hex: string) => void }) {
+  return <SynapserColorPicker value={value} onChange={onChange} />;
 }
 
 function NumberInput({
@@ -72,38 +50,6 @@ function NumberInput({
       onChange={(e) => onChange(Number(e.target.value))}
       className="w-full rounded-md border border-[#2a2520] bg-[#0f0c0a] px-2 py-1.5 text-xs text-[#f0ebe3]"
     />
-  );
-}
-
-function RangeRow({
-  label,
-  value,
-  onChange,
-  min,
-  max,
-  step,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  min: number;
-  max: number;
-  step: number;
-}) {
-  return (
-    <label className="flex items-center gap-2 text-[11px] text-[#f0ebe3]/55">
-      <span className="w-28 shrink-0 uppercase tracking-wider">{label}</span>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-[#c9a66b]"
-      />
-      <span className="w-10 font-mono text-[10px] tabular-nums">{value.toFixed(2)}</span>
-    </label>
   );
 }
 
@@ -150,18 +96,18 @@ function KeyframeEditor({
             Keyframe {index + 1}
           </p>
           <div className="space-y-2">
-            <Field label="At (0–1)">
+            <TipField label="At (0–1)" tip={SCENE_SETTING_TIPS.keyframeAt}>
               <NumberInput value={kf.at} min={0} max={1} step={0.01} onChange={(v) => update(index, { at: v })} />
-            </Field>
-            <Field label="Position">
+            </TipField>
+            <TipField label="Position" tip={SCENE_SETTING_TIPS.keyframePosition}>
               <Vec3Input value={kf.position} onChange={(position) => update(index, { position })} />
-            </Field>
-            <Field label="Look At">
+            </TipField>
+            <TipField label="Look At" tip={SCENE_SETTING_TIPS.keyframeLookAt}>
               <Vec3Input value={kf.lookAt} onChange={(lookAt) => update(index, { lookAt })} />
-            </Field>
-            <Field label="FOV">
+            </TipField>
+            <TipField label="FOV" tip={SCENE_SETTING_TIPS.keyframeFov}>
               <NumberInput value={kf.fov} min={20} max={90} step={1} onChange={(fov) => update(index, { fov })} />
-            </Field>
+            </TipField>
           </div>
           {keyframes.length > 2 ? (
             <button
@@ -228,17 +174,15 @@ function LightEditor({
         <div key={index} className="rounded-lg border border-[#2a2520] bg-[#0f0c0a]/60 p-3">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-[10px] uppercase tracking-wider text-[#c9a66b]/70">Light {index + 1}</p>
-            <label className="flex items-center gap-1.5 text-[10px] text-[#f0ebe3]/50">
-              <input
-                type="checkbox"
-                checked={light.enabled}
-                onChange={(e) => updateLight(index, { enabled: e.target.checked })}
-              />
-              On
-            </label>
+            <TipCheckboxRow
+              label="On"
+              tip={SCENE_SETTING_TIPS.lightEnabled}
+              checked={light.enabled}
+              onChange={(enabled) => updateLight(index, { enabled })}
+            />
           </div>
           <div className="space-y-2">
-            <Field label="Type">
+            <TipField label="Type" tip={SCENE_SETTING_TIPS.lightType}>
               <select
                 value={light.type}
                 onChange={(e) => updateLight(index, { type: e.target.value as SynapserLightConfig["type"] })}
@@ -248,26 +192,26 @@ function LightEditor({
                 <option value="point">Point</option>
                 <option value="spot">Spot</option>
               </select>
-            </Field>
-            <RangeRow
+            </TipField>
+            <TipRangeRow
               label="Intensity"
+              tip={SCENE_SETTING_TIPS.lightIntensity}
+              labelWidth="w-28"
               value={light.intensity}
               min={0}
               max={3}
               step={0.05}
               onChange={(intensity) => updateLight(index, { intensity })}
             />
-            <Field label="Color">
-              <input
-                type="color"
+            <TipField label="Color" tip={SCENE_SETTING_TIPS.lightColor}>
+              <ColorField
                 value={light.color}
-                onChange={(e) => updateLight(index, { color: e.target.value })}
-                className="h-8 w-full cursor-pointer rounded border border-[#2a2520] bg-transparent"
+                onChange={(color) => updateLight(index, { color })}
               />
-            </Field>
-            <Field label="Position">
+            </TipField>
+            <TipField label="Position" tip={SCENE_SETTING_TIPS.lightPosition}>
               <Vec3Input value={light.position} onChange={(position) => updateLight(index, { position })} />
-            </Field>
+            </TipField>
           </div>
           {lights.length > 1 ? (
             <button
@@ -333,288 +277,383 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
           ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={saveSceneSettings}
-            className="rounded-full border border-[#6b8cce]/40 px-4 py-2 text-xs uppercase tracking-wider text-[#f0ebe3] transition-colors hover:border-[#6b8cce]"
-          >
-            저장
-          </button>
-          <button
-            type="button"
-            onClick={() => resetSceneSettings(selectedScene)}
-            className="rounded-full border border-[#f0ebe3]/15 px-4 py-2 text-xs uppercase tracking-wider text-[#f0ebe3]/60 transition-colors hover:border-[#f0ebe3]/35"
-          >
-            기본값
-          </button>
+          <SettingTip tip={SCENE_SETTING_TIPS.save}>
+            <button
+              type="button"
+              onClick={saveSceneSettings}
+              className="cursor-help rounded-full border border-[#6b8cce]/40 px-4 py-2 text-xs uppercase tracking-wider text-[#f0ebe3] transition-colors hover:border-[#6b8cce]"
+            >
+              저장
+            </button>
+          </SettingTip>
+          <SettingTip tip={SCENE_SETTING_TIPS.reset}>
+            <button
+              type="button"
+              onClick={() => resetSceneSettings(selectedScene)}
+              className="cursor-help rounded-full border border-[#f0ebe3]/15 px-4 py-2 text-xs uppercase tracking-wider text-[#f0ebe3]/60 transition-colors hover:border-[#f0ebe3]/35"
+            >
+              기본값
+            </button>
+          </SettingTip>
         </div>
       </div>
 
       <div className="mt-4 space-y-1">
-        <Section title="조명 (Lighting)" open={open.lighting} onToggle={() => toggle("lighting")}>
-          <RangeRow
+        <TipSection
+          title="조명 (Lighting)"
+          tip={SCENE_SETTING_TIPS.sectionLighting}
+          open={open.lighting}
+          onToggle={() => toggle("lighting")}
+        >
+          <TipRangeRow
             label="Ambient"
+            tip={SCENE_SETTING_TIPS.ambient}
+            labelWidth="w-28"
             value={s.lighting.ambientIntensity}
             min={0}
             max={2}
             step={0.05}
             onChange={(ambientIntensity) => patch({ lighting: { ...s.lighting, ambientIntensity } })}
           />
-          <Field label="Ambient Color">
-            <input
-              type="color"
+          <TipField label="Ambient Color" tip={SCENE_SETTING_TIPS.ambientColor}>
+            <ColorField
               value={s.lighting.ambientColor}
-              onChange={(e) => patch({ lighting: { ...s.lighting, ambientColor: e.target.value } })}
-              className="h-8 w-full cursor-pointer rounded border border-[#2a2520] bg-transparent"
+              onChange={(ambientColor) => patch({ lighting: { ...s.lighting, ambientColor } })}
             />
-          </Field>
+          </TipField>
           <LightEditor
             lights={s.lighting.lights}
             onChange={(lights) => patch({ lighting: { ...s.lighting, lights } })}
           />
-        </Section>
+        </TipSection>
 
-        <Section title="배경 (Background)" open={open.background} onToggle={() => toggle("background")}>
-          <Field label="Canvas Color">
-            <input
-              type="color"
+        <TipSection
+          title="배경 (Background)"
+          tip={SCENE_SETTING_TIPS.sectionBackground}
+          open={open.background}
+          onToggle={() => toggle("background")}
+        >
+          <TipField label="Canvas Color" tip={SCENE_SETTING_TIPS.canvasColor}>
+            <ColorField
               value={s.background.canvasColor}
-              onChange={(e) => patch({ background: { ...s.background, canvasColor: e.target.value } })}
-              className="h-8 w-full cursor-pointer rounded border border-[#2a2520] bg-transparent"
+              onChange={(canvasColor) => patch({ background: { ...s.background, canvasColor } })}
             />
-          </Field>
-          <label className="flex items-center gap-2 text-[11px] text-[#f0ebe3]/55">
-            <input
-              type="checkbox"
-              checked={s.background.fogEnabled}
-              onChange={(e) => patch({ background: { ...s.background, fogEnabled: e.target.checked } })}
-            />
-            Fog 활성화
-          </label>
-          <Field label="Fog Color">
-            <input
-              type="color"
+          </TipField>
+          <TipCheckboxRow
+            label="Fog 활성화"
+            tip={SCENE_SETTING_TIPS.fogEnabled}
+            checked={s.background.fogEnabled}
+            onChange={(fogEnabled) => patch({ background: { ...s.background, fogEnabled } })}
+          />
+          <TipField label="Fog Color" tip={SCENE_SETTING_TIPS.fogColor}>
+            <ColorField
               value={s.background.fogColor}
-              onChange={(e) => patch({ background: { ...s.background, fogColor: e.target.value } })}
-              className="h-8 w-full cursor-pointer rounded border border-[#2a2520] bg-transparent"
+              onChange={(fogColor) => patch({ background: { ...s.background, fogColor } })}
             />
-          </Field>
-          <RangeRow
+          </TipField>
+          <TipRangeRow
             label="Fog Near"
+            tip={SCENE_SETTING_TIPS.fogNear}
+            labelWidth="w-28"
             value={s.background.fogNear}
             min={0}
             max={20}
             step={0.5}
             onChange={(fogNear) => patch({ background: { ...s.background, fogNear } })}
           />
-          <RangeRow
+          <TipRangeRow
             label="Fog Far"
+            tip={SCENE_SETTING_TIPS.fogFar}
+            labelWidth="w-28"
             value={s.background.fogFar}
             min={4}
             max={40}
             step={0.5}
             onChange={(fogFar) => patch({ background: { ...s.background, fogFar } })}
           />
-          <label className="flex items-center gap-2 text-[11px] text-[#f0ebe3]/55">
-            <input
-              type="checkbox"
-              checked={s.background.floorVisible}
-              onChange={(e) => patch({ background: { ...s.background, floorVisible: e.target.checked } })}
-            />
-            바닥 표시
-          </label>
-          <Field label="Floor Color">
-            <input
-              type="color"
+          <TipCheckboxRow
+            label="바닥 표시"
+            tip={SCENE_SETTING_TIPS.floorVisible}
+            checked={s.background.floorVisible}
+            onChange={(floorVisible) => patch({ background: { ...s.background, floorVisible } })}
+          />
+          <TipField label="Floor Color" tip={SCENE_SETTING_TIPS.floorColor}>
+            <ColorField
               value={s.background.floorColor}
-              onChange={(e) => patch({ background: { ...s.background, floorColor: e.target.value } })}
-              className="h-8 w-full cursor-pointer rounded border border-[#2a2520] bg-transparent"
+              onChange={(floorColor) => patch({ background: { ...s.background, floorColor } })}
             />
-          </Field>
-          <RangeRow
+          </TipField>
+          <TipRangeRow
             label="Floor Y"
+            tip={SCENE_SETTING_TIPS.floorY}
+            labelWidth="w-28"
             value={s.background.floorY}
             min={-5}
             max={0}
             step={0.1}
             onChange={(floorY) => patch({ background: { ...s.background, floorY } })}
           />
-        </Section>
+        </TipSection>
 
-        <Section title="오브젝트 움직임 (Motion)" open={open.motion} onToggle={() => toggle("motion")}>
-          <label className="flex items-center gap-2 text-[11px] text-[#f0ebe3]/55">
-            <input
-              type="checkbox"
-              checked={s.objectMotion.floatEnabled}
-              onChange={(e) => patch({ objectMotion: { ...s.objectMotion, floatEnabled: e.target.checked } })}
-            />
-            Float 활성화
-          </label>
-          <RangeRow
+        <TipSection
+          title="오브젝트 움직임 (Motion)"
+          tip={SCENE_SETTING_TIPS.sectionMotion}
+          open={open.motion}
+          onToggle={() => toggle("motion")}
+        >
+          <TipCheckboxRow
+            label="Float 활성화"
+            tip={SCENE_SETTING_TIPS.floatEnabled}
+            checked={s.objectMotion.floatEnabled}
+            onChange={(floatEnabled) => patch({ objectMotion: { ...s.objectMotion, floatEnabled } })}
+          />
+          <TipRangeRow
             label="Float Speed"
+            tip={SCENE_SETTING_TIPS.floatSpeed}
+            labelWidth="w-28"
             value={s.objectMotion.floatSpeed}
             min={0}
-            max={5}
-            step={0.1}
+            max={1}
+            step={0.01}
             onChange={(floatSpeed) => patch({ objectMotion: { ...s.objectMotion, floatSpeed } })}
           />
-          <RangeRow
+          <TipRangeRow
             label="Rotation"
+            tip={SCENE_SETTING_TIPS.rotationIntensity}
+            labelWidth="w-28"
             value={s.objectMotion.rotationIntensity}
             min={0}
-            max={2}
-            step={0.05}
+            max={1}
+            step={0.01}
             onChange={(rotationIntensity) => patch({ objectMotion: { ...s.objectMotion, rotationIntensity } })}
           />
-          <RangeRow
+          <TipRangeRow
             label="Float Amp"
+            tip={SCENE_SETTING_TIPS.floatIntensity}
+            labelWidth="w-28"
             value={s.objectMotion.floatIntensity}
             min={0}
-            max={2}
-            step={0.05}
+            max={1}
+            step={0.01}
             onChange={(floatIntensity) => patch({ objectMotion: { ...s.objectMotion, floatIntensity } })}
           />
-          <RangeRow
+          <TipRangeRow
             label="Auto Rot X"
+            tip={SCENE_SETTING_TIPS.autoRotateX}
+            labelWidth="w-28"
             value={s.objectMotion.autoRotateX}
-            min={-0.05}
-            max={0.05}
-            step={0.001}
+            min={0}
+            max={1}
+            step={0.01}
             onChange={(autoRotateX) => patch({ objectMotion: { ...s.objectMotion, autoRotateX } })}
           />
-          <RangeRow
+          <TipRangeRow
             label="Auto Rot Y"
+            tip={SCENE_SETTING_TIPS.autoRotateY}
+            labelWidth="w-28"
             value={s.objectMotion.autoRotateY}
-            min={-0.05}
-            max={0.05}
-            step={0.001}
+            min={0}
+            max={1}
+            step={0.01}
             onChange={(autoRotateY) => patch({ objectMotion: { ...s.objectMotion, autoRotateY } })}
           />
-          <RangeRow
+          <TipRangeRow
             label="Auto Rot Z"
+            tip={SCENE_SETTING_TIPS.autoRotateZ}
+            labelWidth="w-28"
             value={s.objectMotion.autoRotateZ}
-            min={-0.05}
-            max={0.05}
-            step={0.001}
+            min={0}
+            max={1}
+            step={0.01}
             onChange={(autoRotateZ) => patch({ objectMotion: { ...s.objectMotion, autoRotateZ } })}
           />
-          <Field label="Group Offset">
+          <TipField label="Group Offset" tip={SCENE_SETTING_TIPS.groupOffset}>
             <Vec3Input
               value={s.objectMotion.groupOffset}
               onChange={(groupOffset) => patch({ objectMotion: { ...s.objectMotion, groupOffset } })}
             />
-          </Field>
-          <RangeRow
+          </TipField>
+          <TipRangeRow
             label="Group Scale"
+            tip={SCENE_SETTING_TIPS.groupScale}
+            labelWidth="w-28"
             value={s.objectMotion.groupScale}
             min={0.25}
             max={3}
             step={0.05}
             onChange={(groupScale) => patch({ objectMotion: { ...s.objectMotion, groupScale } })}
           />
-        </Section>
+        </TipSection>
 
-        <Section title="카메라 (Camera)" open={open.camera} onToggle={() => toggle("camera")}>
-          <RangeRow
+        <TipSection
+          title="카메라 (Camera)"
+          tip={SCENE_SETTING_TIPS.sectionCamera}
+          open={open.camera}
+          onToggle={() => toggle("camera")}
+        >
+          <TipRangeRow
             label="FOV"
+            tip={SCENE_SETTING_TIPS.fov}
+            labelWidth="w-28"
             value={s.camera.fov}
             min={20}
             max={90}
             step={1}
             onChange={(fov) => patch({ camera: { ...s.camera, fov } })}
           />
-          <Field label="Position">
+          <TipField label="Position" tip={SCENE_SETTING_TIPS.cameraPosition}>
             <Vec3Input
               value={s.camera.position}
               onChange={(position) => patch({ camera: { ...s.camera, position } })}
             />
-          </Field>
-          <Field label="Look At">
+          </TipField>
+          <TipField label="Look At" tip={SCENE_SETTING_TIPS.cameraLookAt}>
             <Vec3Input
               value={s.camera.lookAt}
               onChange={(lookAt) => patch({ camera: { ...s.camera, lookAt } })}
             />
-          </Field>
-          <RangeRow
-            label="Drift X"
+          </TipField>
+          <TipRangeRow
+            label="Orbit X"
+            tip={SCENE_SETTING_TIPS.pointerDriftX}
+            labelWidth="w-28"
             value={s.camera.pointerDriftX}
             min={0}
             max={2}
             step={0.05}
             onChange={(pointerDriftX) => patch({ camera: { ...s.camera, pointerDriftX } })}
           />
-          <RangeRow
-            label="Drift Y"
+          <TipRangeRow
+            label="Orbit Y"
+            tip={SCENE_SETTING_TIPS.pointerDriftY}
+            labelWidth="w-28"
             value={s.camera.pointerDriftY}
             min={0}
             max={2}
             step={0.05}
             onChange={(pointerDriftY) => patch({ camera: { ...s.camera, pointerDriftY } })}
           />
-          <RangeRow
+          <TipRangeRow
+            label="Orbit Damp"
+            tip={SCENE_SETTING_TIPS.orbitDamp}
+            labelWidth="w-28"
+            value={s.camera.orbitDamp}
+            min={1}
+            max={20}
+            step={0.5}
+            onChange={(orbitDamp) => patch({ camera: { ...s.camera, orbitDamp } })}
+          />
+          <TipRangeRow
+            label="Orbit Edge"
+            tip={SCENE_SETTING_TIPS.orbitEdgePower}
+            labelWidth="w-28"
+            value={s.camera.orbitEdgePower}
+            min={0.4}
+            max={1.2}
+            step={0.02}
+            onChange={(orbitEdgePower) => patch({ camera: { ...s.camera, orbitEdgePower } })}
+          />
+          <TipRangeRow
+            label="Hover Zoom"
+            tip={SCENE_SETTING_TIPS.hoverZoomPull}
+            labelWidth="w-28"
+            value={s.camera.hoverZoomPull}
+            min={0}
+            max={1}
+            step={0.02}
+            onChange={(hoverZoomPull) => patch({ camera: { ...s.camera, hoverZoomPull } })}
+          />
+          <TipRangeRow
+            label="Hover FOV"
+            tip={SCENE_SETTING_TIPS.hoverZoomFovPull}
+            labelWidth="w-28"
+            value={s.camera.hoverZoomFovPull}
+            min={0}
+            max={12}
+            step={0.25}
+            onChange={(hoverZoomFovPull) => patch({ camera: { ...s.camera, hoverZoomFovPull } })}
+          />
+          <TipRangeRow
+            label="Hover Damp"
+            tip={SCENE_SETTING_TIPS.hoverZoomDamp}
+            labelWidth="w-28"
+            value={s.camera.hoverZoomDamp}
+            min={1}
+            max={20}
+            step={0.5}
+            onChange={(hoverZoomDamp) => patch({ camera: { ...s.camera, hoverZoomDamp } })}
+          />
+          <TipRangeRow
             label="Lerp"
+            tip={SCENE_SETTING_TIPS.lerpSpeed}
+            labelWidth="w-28"
             value={s.camera.lerpSpeed}
             min={0.01}
             max={0.3}
             step={0.01}
             onChange={(lerpSpeed) => patch({ camera: { ...s.camera, lerpSpeed } })}
           />
-          <RangeRow
+          <TipRangeRow
             label="Near"
+            tip={SCENE_SETTING_TIPS.near}
+            labelWidth="w-28"
             value={s.camera.near}
             min={0.01}
             max={5}
             step={0.01}
             onChange={(near) => patch({ camera: { ...s.camera, near } })}
           />
-          <RangeRow
+          <TipRangeRow
             label="Far"
+            tip={SCENE_SETTING_TIPS.far}
+            labelWidth="w-28"
             value={s.camera.far}
             min={10}
             max={500}
             step={1}
             onChange={(far) => patch({ camera: { ...s.camera, far } })}
           />
-        </Section>
+        </TipSection>
 
-        <Section title="카메라 애니메이션" open={open.cameraAnim} onToggle={() => toggle("cameraAnim")}>
-          <label className="flex items-center gap-2 text-[11px] text-[#f0ebe3]/55">
-            <input
-              type="checkbox"
-              checked={s.cameraAnimation.enabled}
-              onChange={(e) =>
-                patch({ cameraAnimation: { ...s.cameraAnimation, enabled: e.target.checked } })
-              }
-            />
-            애니메이션 활성화
-          </label>
-          <label className="flex items-center gap-2 text-[11px] text-[#f0ebe3]/55">
-            <input
-              type="checkbox"
-              checked={s.cameraAnimation.useScrollProgress}
-              onChange={(e) =>
-                patch({ cameraAnimation: { ...s.cameraAnimation, useScrollProgress: e.target.checked } })
-              }
-            />
-            스크롤 진행도 연동
-          </label>
-          <label className="flex items-center gap-2 text-[11px] text-[#f0ebe3]/55">
-            <input
-              type="checkbox"
-              checked={s.cameraAnimation.loop}
-              onChange={(e) => patch({ cameraAnimation: { ...s.cameraAnimation, loop: e.target.checked } })}
-            />
-            반복 (시간 기반)
-          </label>
-          <RangeRow
+        <TipSection
+          title="카메라 애니메이션"
+          tip={SCENE_SETTING_TIPS.sectionCameraAnim}
+          open={open.cameraAnim}
+          onToggle={() => toggle("cameraAnim")}
+        >
+          <TipCheckboxRow
+            label="애니메이션 활성화"
+            tip={SCENE_SETTING_TIPS.camAnimEnabled}
+            checked={s.cameraAnimation.enabled}
+            onChange={(enabled) =>
+              patch({ cameraAnimation: { ...s.cameraAnimation, enabled } })
+            }
+          />
+          <TipCheckboxRow
+            label="스크롤 진행도 연동"
+            tip={SCENE_SETTING_TIPS.camAnimScroll}
+            checked={s.cameraAnimation.useScrollProgress}
+            onChange={(useScrollProgress) =>
+              patch({ cameraAnimation: { ...s.cameraAnimation, useScrollProgress } })
+            }
+          />
+          <TipCheckboxRow
+            label="반복 (시간 기반)"
+            tip={SCENE_SETTING_TIPS.camAnimLoop}
+            checked={s.cameraAnimation.loop}
+            onChange={(loop) => patch({ cameraAnimation: { ...s.cameraAnimation, loop } })}
+          />
+          <TipRangeRow
             label="FPS"
+            tip={SCENE_SETTING_TIPS.camAnimFps}
+            labelWidth="w-28"
             value={s.cameraAnimation.fps}
             min={12}
             max={60}
             step={1}
             onChange={(fps) => patch({ cameraAnimation: { ...s.cameraAnimation, fps } })}
           />
-          <Field label="Duration (frames)">
+          <TipField label="Duration (frames)" tip={SCENE_SETTING_TIPS.camAnimDuration}>
             <NumberInput
               value={s.cameraAnimation.durationFrames}
               min={12}
@@ -624,12 +663,12 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
                 patch({ cameraAnimation: { ...s.cameraAnimation, durationFrames } })
               }
             />
-          </Field>
+          </TipField>
           <KeyframeEditor
             keyframes={s.cameraAnimation.keyframes}
             onChange={(keyframes) => patch({ cameraAnimation: { ...s.cameraAnimation, keyframes } })}
           />
-        </Section>
+        </TipSection>
       </div>
     </div>
   );

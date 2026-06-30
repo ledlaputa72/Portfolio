@@ -29,6 +29,14 @@ import {
   type SynapserSceneSettings,
   type SynapserSceneSettingsMap,
 } from "@/lib/synapser-scene-settings";
+import {
+  DEFAULT_SYNAPSER_SCROLL_GLITCH,
+  readSynapserScrollGlitchSettings,
+  mergeScrollGlitchPatch,
+  resetSynapserScrollGlitchSettings,
+  writeSynapserScrollGlitchSettings,
+  type SynapserScrollGlitchSettings,
+} from "@/lib/synapser-scroll-glitch";
 
 export type SceneModelState = {
   mode: "default" | "custom";
@@ -61,6 +69,7 @@ type SynapserModelContextValue = {
   activeScene: SceneModelState;
   sceneSettings: SynapserSceneSettingsMap;
   activeSceneSettings: SynapserSceneSettings;
+  scrollGlitch: SynapserScrollGlitchSettings;
   settingsDirty: boolean;
   loading: boolean;
   loadFile: (file: File) => Promise<void>;
@@ -73,6 +82,8 @@ type SynapserModelContextValue = {
   ) => void;
   saveSceneSettings: () => void;
   resetSceneSettings: (sceneId?: SynapserSceneId) => void;
+  patchScrollGlitch: (patch: Partial<SynapserScrollGlitchSettings>) => void;
+  resetScrollGlitch: () => void;
 };
 
 const SynapserModelContext = createContext<SynapserModelContextValue | null>(null);
@@ -92,6 +103,9 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
   const [scenes, setScenes] = useState<Record<SynapserSceneId, SceneModelState>>(createEmptyScenes);
   const [sceneSettings, setSceneSettings] = useState<SynapserSceneSettingsMap>(
     DEFAULT_SYNAPSER_SCENE_SETTINGS,
+  );
+  const [scrollGlitch, setScrollGlitch] = useState<SynapserScrollGlitchSettings>(
+    DEFAULT_SYNAPSER_SCROLL_GLITCH,
   );
   const [settingsDirty, setSettingsDirty] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -158,6 +172,7 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
     }
     setScenes(next);
     setSceneSettings(readSynapserSceneSettingsMap());
+    setScrollGlitch(readSynapserScrollGlitchSettings());
     setSettingsDirty(false);
     setLoading(false);
   }, [revokeAllUrls]);
@@ -268,8 +283,19 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
 
   const saveSceneSettings = useCallback(() => {
     writeSynapserSceneSettingsMap(sceneSettings);
+    writeSynapserScrollGlitchSettings(scrollGlitch);
     setSettingsDirty(false);
-  }, [sceneSettings]);
+  }, [sceneSettings, scrollGlitch]);
+
+  const patchScrollGlitch = useCallback((patch: Partial<SynapserScrollGlitchSettings>) => {
+    setScrollGlitch((prev) => mergeScrollGlitchPatch(prev, patch));
+    setSettingsDirty(true);
+  }, []);
+
+  const resetScrollGlitch = useCallback(() => {
+    setScrollGlitch(resetSynapserScrollGlitchSettings());
+    setSettingsDirty(false);
+  }, []);
 
   const resetSceneSettings = useCallback(
     (sceneId?: SynapserSceneId) => {
@@ -293,6 +319,7 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
       activeScene,
       sceneSettings,
       activeSceneSettings,
+      scrollGlitch,
       settingsDirty,
       loading,
       loadFile,
@@ -302,6 +329,8 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
       patchSceneSettings,
       saveSceneSettings,
       resetSceneSettings,
+      patchScrollGlitch,
+      resetScrollGlitch,
     }),
     [
       selectedScene,
@@ -309,6 +338,7 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
       activeScene,
       sceneSettings,
       activeSceneSettings,
+      scrollGlitch,
       settingsDirty,
       loading,
       loadFile,
@@ -318,6 +348,8 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
       patchSceneSettings,
       saveSceneSettings,
       resetSceneSettings,
+      patchScrollGlitch,
+      resetScrollGlitch,
     ],
   );
 

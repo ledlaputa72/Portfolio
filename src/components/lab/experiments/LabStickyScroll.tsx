@@ -55,7 +55,10 @@ const LabStickyScroll = forwardRef<LabStickyScrollHandle, LabStickyScrollProps>(
     const stRef = useRef<ScrollTrigger | null>(null);
     const internalProgressRef = useRef(0);
     const progressRef = externalProgressRef ?? internalProgressRef;
+    const onProgressRef = useRef(onProgress);
     const [percent, setPercent] = useState(0);
+
+    onProgressRef.current = onProgress;
 
     useImperativeHandle(ref, () => ({
       getProgress: () => progressRef.current,
@@ -94,8 +97,11 @@ const LabStickyScroll = forwardRef<LabStickyScrollHandle, LabStickyScrollProps>(
         scrub: true,
         onUpdate: (self) => {
           progressRef.current = self.progress;
-          onProgress?.(self.progress);
-          if (showProgress) setPercent(Math.round(self.progress * 100));
+          onProgressRef.current?.(self.progress);
+          if (showProgress) {
+            const next = Math.round(self.progress * 100);
+            setPercent((prev) => (prev === next ? prev : next));
+          }
         },
       });
       stRef.current = st;
@@ -104,7 +110,7 @@ const LabStickyScroll = forwardRef<LabStickyScrollHandle, LabStickyScrollProps>(
         st.kill();
         stRef.current = null;
       };
-    }, [onProgress, progressRef, showProgress]);
+    }, [progressRef, showProgress]);
 
     return (
       <div
