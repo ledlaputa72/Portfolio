@@ -20,6 +20,15 @@ import {
   type SynapserModelMeta,
   type SynapserSceneId,
 } from "@/lib/synapser-model-store";
+import {
+  DEFAULT_SYNAPSER_SCENE_SETTINGS,
+  readSynapserSceneSettingsMap,
+  resetAllSynapserSceneSettings,
+  resetSynapserSceneSettings,
+  writeSynapserSceneSettingsMap,
+  type SynapserSceneSettings,
+  type SynapserSceneSettingsMap,
+} from "@/lib/synapser-scene-settings";
 
 export type SceneModelState = {
   mode: "default" | "custom";
@@ -50,11 +59,20 @@ type SynapserModelContextValue = {
   setSelectedScene: (sceneId: SynapserSceneId) => void;
   scenes: Record<SynapserSceneId, SceneModelState>;
   activeScene: SceneModelState;
+  sceneSettings: SynapserSceneSettingsMap;
+  activeSceneSettings: SynapserSceneSettings;
+  settingsDirty: boolean;
   loading: boolean;
   loadFile: (file: File) => Promise<void>;
   saveModel: () => Promise<void>;
   resetModel: () => Promise<void>;
   setScale: (scale: number) => void;
+  patchSceneSettings: (
+    sceneId: SynapserSceneId,
+    patch: Partial<SynapserSceneSettings> | ((prev: SynapserSceneSettings) => SynapserSceneSettings),
+  ) => void;
+  saveSceneSettings: () => void;
+  resetSceneSettings: (sceneId?: SynapserSceneId) => void;
 };
 
 const SynapserModelContext = createContext<SynapserModelContextValue | null>(null);
@@ -72,6 +90,10 @@ export { SYNAPSER_SCENES };
 export function SynapserModelProvider({ children }: { children: ReactNode }) {
   const [selectedScene, setSelectedScene] = useState<SynapserSceneId>("manifesto");
   const [scenes, setScenes] = useState<Record<SynapserSceneId, SceneModelState>>(createEmptyScenes);
+  const [sceneSettings, setSceneSettings] = useState<SynapserSceneSettingsMap>(
+    DEFAULT_SYNAPSER_SCENE_SETTINGS,
+  );
+  const [settingsDirty, setSettingsDirty] = useState(false);
   const [loading, setLoading] = useState(true);
   const urlRefs = useRef<Partial<Record<SynapserSceneId, string>>>({});
 
@@ -135,6 +157,8 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
       }
     }
     setScenes(next);
+    setSceneSettings(readSynapserSceneSettingsMap());
+    setSettingsDirty(false);
     setLoading(false);
   }, [revokeAllUrls]);
 
@@ -144,6 +168,7 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
   }, [hydrate, revokeAllUrls]);
 
   const activeScene = scenes[selectedScene];
+  const activeSceneSettings = sceneSettings[selectedScene];
 
   const loadFile = useCallback(
     async (file: File) => {
@@ -209,27 +234,90 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
     [selectedScene],
   );
 
+  const patchSceneSettings = useCallback(
+    (
+      sceneId: SynapserSceneId,
+      patch: Partial<SynapserSceneSettings> | ((prev: SynapserSceneSettings) => SynapserSceneSettings),
+    ) => {
+      setSceneSettings((prev) => {
+        const current = prev[sceneId];
+        const next =
+          typeof patch === "function"
+            ? patch(current)
+            : {
+                lighting: { ...current.lighting, ...patch.lighting },
+                background: { ...current.background, ...patch.background },
+                objectMotion: { ...current.objectMotion, ...patch.objectMotion },
+                camera: { ...current.camera, ...patch.camera },
+                cameraAnimation: {
+                  ...current.cameraAnimation,
+                  ...patch.cameraAnimation,
+                  keyframes: patch.cameraAnimation?.keyframes ?? current.cameraAnimation.keyframes,
+                },
+                cinematicScroll: {
+                  ...current.cinematicScroll,
+                  ...patch.cinematicScroll,
+                },
+              };
+        return { ...prev, [sceneId]: next };
+      });
+      setSettingsDirty(true);
+    },
+    [],
+  );
+
+  const saveSceneSettings = useCallback(() => {
+    writeSynapserSceneSettingsMap(sceneSettings);
+    setSettingsDirty(false);
+  }, [sceneSettings]);
+
+  const resetSceneSettings = useCallback(
+    (sceneId?: SynapserSceneId) => {
+      if (sceneId) {
+        const map = resetSynapserSceneSettings(sceneId);
+        setSceneSettings(map);
+      } else {
+        const map = resetAllSynapserSceneSettings();
+        setSceneSettings(map);
+      }
+      setSettingsDirty(false);
+    },
+    [],
+  );
+
   const value = useMemo<SynapserModelContextValue>(
     () => ({
       selectedScene,
       setSelectedScene,
       scenes,
       activeScene,
+      sceneSettings,
+      activeSceneSettings,
+      settingsDirty,
       loading,
       loadFile,
       saveModel,
       resetModel,
       setScale,
+      patchSceneSettings,
+      saveSceneSettings,
+      resetSceneSettings,
     }),
     [
       selectedScene,
       scenes,
       activeScene,
+      sceneSettings,
+      activeSceneSettings,
+      settingsDirty,
       loading,
       loadFile,
       saveModel,
       resetModel,
       setScale,
+      patchSceneSettings,
+      saveSceneSettings,
+      resetSceneSettings,
     ],
   );
 

@@ -6,9 +6,13 @@ import { SYNAPSER_MODEL_ACCEPT } from "@/lib/synapser-model-store";
 
 type SynapserModelSettingsProps = {
   compact?: boolean;
+  hideSceneSelect?: boolean;
 };
 
-export default function SynapserModelSettings({ compact = false }: SynapserModelSettingsProps) {
+export default function SynapserModelSettings({
+  compact = false,
+  hideSceneSelect = false,
+}: SynapserModelSettingsProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const {
     selectedScene,
@@ -39,6 +43,7 @@ export default function SynapserModelSettings({ compact = false }: SynapserModel
             3D Model
           </p>
 
+          {!hideSceneSelect ? (
           <label className="mt-3 block">
             <span className="text-[10px] uppercase tracking-wider text-[#f0ebe3]/40">씬 선택</span>
             <select
@@ -56,6 +61,7 @@ export default function SynapserModelSettings({ compact = false }: SynapserModel
               })}
             </select>
           </label>
+          ) : null}
 
           <p className="mt-2 text-sm text-[#f0ebe3]/70">
             {loading

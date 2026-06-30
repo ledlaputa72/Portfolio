@@ -1,8 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
 import { SynapserModelProvider } from "./SynapserModelContext";
-import SynapserModelSettings from "./SynapserModelSettings";
 import SynapserStudioScroll from "./SynapserStudioScroll";
 import { SynapserScrollVector, SynapserTorusVector } from "./LabVectors";
 
@@ -38,9 +36,6 @@ export default function SynapserStudioSample() {
           Lisbon digital atelier. 스크롤하면 화면이 고정되고 Manifesto → Archive →
           Journey 장면이 카메라 drift와 함께 전환됩니다.
         </p>
-        <div className="mt-8">
-          <SynapserModelSettings />
-        </div>
         <div className="mt-8 text-xs text-[#f0ebe3]/30">↓ scroll — pinned 3D scenes</div>
       </section>
 
