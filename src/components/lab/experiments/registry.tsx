@@ -733,7 +733,7 @@ gsap.set(wordEl, {
       ],
       points: [
         "400vh sticky pin — progress 0–1을 3개 장면(Manifesto/Archive/Journey)으로 분할, 각 구간마다 독립 3D 오브젝트 세트 scale fade.",
-        "3D Model 메뉴: GLB/GLTF 불러오기 · 저장(IndexedDB + 다운로드) · 기본값 복원 — sample 페이지에도 동일 적용.",
+        "3D Model 메뉴: 씬별(Manifesto/Archive/Journey) 드롭다운 선택 후 GLB 불러오기 · 저장 · 기본값 — sample 페이지 동일 적용.",
         "카메라 경로 3키프레임 lerp + pointer drift, custom 모델은 스크롤 visibility에 맞춰 scale.",
         "HTML 타이포 오버레이는 sceneIndex + local progress fade — 3D 씬과 동기화된 scroll-driven storytelling.",
       ],

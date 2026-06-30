@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, Suspense } from "react";
+import { useMemo, useRef, useState, Suspense, type ReactNode } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Float, Line, useGLTF } from "@react-three/drei";
 import type { Group } from "three";
@@ -150,13 +150,32 @@ function CustomImportedModel({ url, scale }: { url: string; scale: number }) {
   );
 }
 
+function SceneObject({
+  sceneId,
+  procedural,
+}: {
+  sceneId: "manifesto" | "archive" | "journey";
+  procedural: ReactNode;
+}) {
+  const { scenes } = useSynapserModel();
+  const scene = scenes[sceneId];
+
+  if (scene.mode === "custom" && scene.modelUrl) {
+    return (
+      <Suspense fallback={null}>
+        <CustomImportedModel key={scene.modelUrl} url={scene.modelUrl} scale={scene.scale} />
+      </Suspense>
+    );
+  }
+
+  return <>{procedural}</>;
+}
+
 function ScrollWorld({ progressRef }: { progressRef: React.RefObject<number> }) {
-  const { mode, modelUrl, scale } = useSynapserModel();
   const rootRef = useRef<Group>(null!);
   const manifestoGroupRef = useRef<Group>(null!);
   const archiveGroupRef = useRef<Group>(null!);
   const networkGroupRef = useRef<Group>(null!);
-  const customGroupRef = useRef<Group>(null!);
   const { pointer, camera } = useThree();
 
   useFrame(() => {
@@ -174,11 +193,6 @@ function ScrollWorld({ progressRef }: { progressRef: React.RefObject<number> }) 
     manifestoGroupRef.current.scale.setScalar(manifestoVis);
     archiveGroupRef.current.scale.setScalar(archiveVis);
     networkGroupRef.current.scale.setScalar(networkVis);
-
-    const customVis = Math.max(manifestoVis, archiveVis, networkVis);
-    if (customGroupRef.current) {
-      customGroupRef.current.scale.setScalar(customVis);
-    }
 
     const camX =
       p < 0.5
@@ -210,23 +224,15 @@ function ScrollWorld({ progressRef }: { progressRef: React.RefObject<number> }) 
       <directionalLight position={[4, 6, 3]} intensity={1.1} color="#f5e6d3" />
       <pointLight position={[-3, 2, 2]} intensity={0.5} color="#6b8cce" />
 
-      <group ref={manifestoGroupRef} visible={mode === "default"}>
-        <ManifestoObject visible={1} />
+      <group ref={manifestoGroupRef}>
+        <SceneObject sceneId="manifesto" procedural={<ManifestoObject visible={1} />} />
       </group>
-      <group ref={archiveGroupRef} position={[0, -0.2, 0]} visible={mode === "default"}>
-        <ArchiveGrid visible={1} />
+      <group ref={archiveGroupRef} position={[0, -0.2, 0]}>
+        <SceneObject sceneId="archive" procedural={<ArchiveGrid visible={1} />} />
       </group>
-      <group ref={networkGroupRef} visible={mode === "default"}>
-        <SynapseNetwork visible={1} />
+      <group ref={networkGroupRef}>
+        <SceneObject sceneId="journey" procedural={<SynapseNetwork visible={1} />} />
       </group>
-
-      {mode === "custom" && modelUrl ? (
-        <group ref={customGroupRef}>
-          <Suspense fallback={null}>
-            <CustomImportedModel key={modelUrl} url={modelUrl} scale={scale} />
-          </Suspense>
-        </group>
-      ) : null}
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]} receiveShadow>
         <planeGeometry args={[20, 20]} />

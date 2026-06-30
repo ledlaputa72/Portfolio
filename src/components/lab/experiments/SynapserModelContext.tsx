@@ -11,20 +11,45 @@ import {
   type ReactNode,
 } from "react";
 import {
-  clearSynapserModel,
+  clearSynapserScene,
   downloadSynapserModel,
-  readSynapserModelBlob,
-  readSynapserModelMeta,
-  writeSynapserModelBlob,
+  hydrateSynapserSceneModels,
+  readSynapserSceneBlob,
+  writeSynapserSceneBlob,
+  SYNAPSER_SCENES,
   type SynapserModelMeta,
+  type SynapserSceneId,
 } from "@/lib/synapser-model-store";
 
-type SynapserModelContextValue = {
+export type SceneModelState = {
   mode: "default" | "custom";
   meta: SynapserModelMeta | null;
   modelUrl: string | null;
   pendingBuffer: ArrayBuffer | null;
   scale: number;
+};
+
+const EMPTY_SCENE: SceneModelState = {
+  mode: "default",
+  meta: null,
+  modelUrl: null,
+  pendingBuffer: null,
+  scale: 1,
+};
+
+function createEmptyScenes(): Record<SynapserSceneId, SceneModelState> {
+  return {
+    manifesto: { ...EMPTY_SCENE },
+    archive: { ...EMPTY_SCENE },
+    journey: { ...EMPTY_SCENE },
+  };
+}
+
+type SynapserModelContextValue = {
+  selectedScene: SynapserSceneId;
+  setSelectedScene: (sceneId: SynapserSceneId) => void;
+  scenes: Record<SynapserSceneId, SceneModelState>;
+  activeScene: SceneModelState;
   loading: boolean;
   loadFile: (file: File) => Promise<void>;
   saveModel: () => Promise<void>;
@@ -42,122 +67,170 @@ export function useSynapserModel() {
   return ctx;
 }
 
-export function SynapserModelProvider({ children }: { children: ReactNode }) {
-  const [meta, setMeta] = useState<SynapserModelMeta | null>(null);
-  const [modelUrl, setModelUrl] = useState<string | null>(null);
-  const [pendingBuffer, setPendingBuffer] = useState<ArrayBuffer | null>(null);
-  const [scale, setScaleState] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const urlRef = useRef<string | null>(null);
+export { SYNAPSER_SCENES };
 
-  const revokeUrl = useCallback(() => {
-    if (urlRef.current) {
-      URL.revokeObjectURL(urlRef.current);
-      urlRef.current = null;
+export function SynapserModelProvider({ children }: { children: ReactNode }) {
+  const [selectedScene, setSelectedScene] = useState<SynapserSceneId>("manifesto");
+  const [scenes, setScenes] = useState<Record<SynapserSceneId, SceneModelState>>(createEmptyScenes);
+  const [loading, setLoading] = useState(true);
+  const urlRefs = useRef<Partial<Record<SynapserSceneId, string>>>({});
+
+  const revokeSceneUrl = useCallback((sceneId: SynapserSceneId) => {
+    const url = urlRefs.current[sceneId];
+    if (url) {
+      URL.revokeObjectURL(url);
+      delete urlRefs.current[sceneId];
     }
-    setModelUrl(null);
   }, []);
 
-  const applyBuffer = useCallback(
-    (buffer: ArrayBuffer, nextMeta: SynapserModelMeta, persisted: boolean) => {
-      revokeUrl();
+  const revokeAllUrls = useCallback(() => {
+    for (const id of Object.keys(urlRefs.current) as SynapserSceneId[]) {
+      revokeSceneUrl(id);
+    }
+  }, [revokeSceneUrl]);
+
+  const applySceneBuffer = useCallback(
+    (
+      sceneId: SynapserSceneId,
+      buffer: ArrayBuffer,
+      nextMeta: SynapserModelMeta,
+      persisted: boolean,
+    ) => {
+      revokeSceneUrl(sceneId);
       const blob = new Blob([buffer], { type: "model/gltf-binary" });
       const url = URL.createObjectURL(blob);
-      urlRef.current = url;
-      setModelUrl(url);
-      setMeta(nextMeta);
-      setScaleState(nextMeta.scale);
-      setPendingBuffer(persisted ? null : buffer);
+      urlRefs.current[sceneId] = url;
+      setScenes((prev) => ({
+        ...prev,
+        [sceneId]: {
+          mode: "custom",
+          meta: nextMeta,
+          modelUrl: url,
+          pendingBuffer: persisted ? null : buffer,
+          scale: nextMeta.scale,
+        },
+      }));
     },
-    [revokeUrl],
+    [revokeSceneUrl],
   );
 
   const hydrate = useCallback(async () => {
     setLoading(true);
-    const storedMeta = readSynapserModelMeta();
-    const buffer = await readSynapserModelBlob();
-    if (storedMeta && buffer) {
-      applyBuffer(buffer, storedMeta, true);
-    } else {
-      revokeUrl();
-      setMeta(null);
-      setPendingBuffer(null);
-      setScaleState(1);
+    revokeAllUrls();
+    const stored = await hydrateSynapserSceneModels();
+    const next = createEmptyScenes();
+    for (const id of ["manifesto", "archive", "journey"] as SynapserSceneId[]) {
+      const entry = stored[id];
+      if (entry) {
+        const blob = new Blob([entry.buffer], { type: "model/gltf-binary" });
+        const url = URL.createObjectURL(blob);
+        urlRefs.current[id] = url;
+        next[id] = {
+          mode: "custom",
+          meta: entry.meta,
+          modelUrl: url,
+          pendingBuffer: null,
+          scale: entry.meta.scale,
+        };
+      }
     }
+    setScenes(next);
     setLoading(false);
-  }, [applyBuffer, revokeUrl]);
+  }, [revokeAllUrls]);
 
   useEffect(() => {
     hydrate();
-    return () => revokeUrl();
-  }, [hydrate, revokeUrl]);
+    return () => revokeAllUrls();
+  }, [hydrate, revokeAllUrls]);
+
+  const activeScene = scenes[selectedScene];
 
   const loadFile = useCallback(
     async (file: File) => {
       const buffer = await file.arrayBuffer();
-      applyBuffer(
+      applySceneBuffer(
+        selectedScene,
         buffer,
         {
           fileName: file.name,
           savedAt: Date.now(),
-          scale,
+          scale: scenes[selectedScene].scale,
         },
         false,
       );
     },
-    [applyBuffer, scale],
+    [applySceneBuffer, selectedScene, scenes],
   );
 
   const saveModel = useCallback(async () => {
-    const buffer = pendingBuffer ?? (await readSynapserModelBlob());
-    if (!buffer || !meta) return;
-    const nextMeta = { ...meta, savedAt: Date.now(), scale };
-    await writeSynapserModelBlob(buffer, nextMeta);
-    setMeta(nextMeta);
-    setPendingBuffer(null);
-    downloadSynapserModel(buffer, meta.fileName);
-  }, [meta, pendingBuffer, scale]);
+    const scene = scenes[selectedScene];
+    const buffer = scene.pendingBuffer ?? (await readSynapserSceneBlob(selectedScene));
+    if (!buffer || !scene.meta) return;
+    const nextMeta = { ...scene.meta, savedAt: Date.now(), scale: scene.scale };
+    await writeSynapserSceneBlob(selectedScene, buffer, nextMeta);
+    setScenes((prev) => ({
+      ...prev,
+      [selectedScene]: {
+        ...prev[selectedScene],
+        meta: nextMeta,
+        pendingBuffer: null,
+      },
+    }));
+    downloadSynapserModel(buffer, scene.meta.fileName);
+  }, [scenes, selectedScene]);
 
   const resetModel = useCallback(async () => {
-    await clearSynapserModel();
-    revokeUrl();
-    setMeta(null);
-    setPendingBuffer(null);
-    setScaleState(1);
-  }, [revokeUrl]);
+    await clearSynapserScene(selectedScene);
+    revokeSceneUrl(selectedScene);
+    setScenes((prev) => ({
+      ...prev,
+      [selectedScene]: { ...EMPTY_SCENE },
+    }));
+  }, [revokeSceneUrl, selectedScene]);
 
   const setScale = useCallback(
     (next: number) => {
       const clamped = Math.max(0.25, Math.min(3, next));
-      setScaleState(clamped);
-      setMeta((prev) => {
-        if (!prev) return prev;
-        const updated = { ...prev, scale: clamped };
-        if (!pendingBuffer) {
-          readSynapserModelBlob().then((buffer) => {
-            if (buffer) writeSynapserModelBlob(buffer, updated);
+      setScenes((prev) => {
+        const scene = prev[selectedScene];
+        if (scene.mode !== "custom" || !scene.meta) return prev;
+        const updated = { ...scene.meta, scale: clamped };
+        if (!scene.pendingBuffer) {
+          readSynapserSceneBlob(selectedScene).then((buffer) => {
+            if (buffer) writeSynapserSceneBlob(selectedScene, buffer, updated);
           });
         }
-        return updated;
+        return {
+          ...prev,
+          [selectedScene]: { ...scene, scale: clamped, meta: updated },
+        };
       });
     },
-    [pendingBuffer],
+    [selectedScene],
   );
 
   const value = useMemo<SynapserModelContextValue>(
     () => ({
-      mode: modelUrl ? "custom" : "default",
-      meta,
-      modelUrl,
-      pendingBuffer,
-      scale,
+      selectedScene,
+      setSelectedScene,
+      scenes,
+      activeScene,
       loading,
       loadFile,
       saveModel,
       resetModel,
       setScale,
     }),
-    [meta, modelUrl, pendingBuffer, scale, loading, loadFile, saveModel, resetModel, setScale],
+    [
+      selectedScene,
+      scenes,
+      activeScene,
+      loading,
+      loadFile,
+      saveModel,
+      resetModel,
+      setScale,
+    ],
   );
 
   return <SynapserModelContext.Provider value={value}>{children}</SynapserModelContext.Provider>;

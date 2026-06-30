@@ -1,14 +1,31 @@
+export type SynapserSceneId = "manifesto" | "archive" | "journey";
+
 export type SynapserModelMeta = {
   fileName: string;
   savedAt: number;
   scale: number;
 };
 
-const META_KEY = "synapser-model-meta";
+export type SynapserSceneMetaMap = Partial<Record<SynapserSceneId, SynapserModelMeta>>;
+
+export const SYNAPSER_SCENES: {
+  id: SynapserSceneId;
+  label: string;
+  defaultObject: string;
+}[] = [
+  { id: "manifesto", label: "Manifesto", defaultObject: "Torus" },
+  { id: "archive", label: "Archive", defaultObject: "Grid" },
+  { id: "journey", label: "Journey", defaultObject: "Network" },
+];
+
+const META_KEY = "synapser-model-meta-v2";
+const LEGACY_META_KEY = "synapser-model-meta";
 const DB_NAME = "portfolio-synapser-models";
 const DB_VERSION = 1;
 const STORE = "models";
-const RECORD_ID = "custom";
+const LEGACY_RECORD_ID = "custom";
+
+const SCENE_IDS: SynapserSceneId[] = ["manifesto", "archive", "journey"];
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -21,39 +38,72 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
-export function readSynapserModelMeta(): SynapserModelMeta | null {
-  if (typeof window === "undefined") return null;
+function normalizeMeta(parsed: SynapserModelMeta): SynapserModelMeta | null {
+  if (typeof parsed.fileName !== "string") return null;
+  return {
+    fileName: parsed.fileName,
+    savedAt: parsed.savedAt ?? 0,
+    scale: typeof parsed.scale === "number" ? parsed.scale : 1,
+  };
+}
+
+export function readSynapserSceneMetaMap(): SynapserSceneMetaMap {
+  if (typeof window === "undefined") return {};
   try {
     const raw = localStorage.getItem(META_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as SynapserModelMeta;
-    if (typeof parsed.fileName !== "string") return null;
-    return {
-      fileName: parsed.fileName,
-      savedAt: parsed.savedAt ?? 0,
-      scale: typeof parsed.scale === "number" ? parsed.scale : 1,
-    };
+    if (!raw) return migrateLegacyMeta();
+    const parsed = JSON.parse(raw) as SynapserSceneMetaMap;
+    const result: SynapserSceneMetaMap = {};
+    for (const id of SCENE_IDS) {
+      const meta = parsed[id];
+      if (meta) {
+        const normalized = normalizeMeta(meta);
+        if (normalized) result[id] = normalized;
+      }
+    }
+    return result;
   } catch {
-    return null;
+    return {};
   }
 }
 
-function writeSynapserModelMeta(meta: SynapserModelMeta | null) {
+function migrateLegacyMeta(): SynapserSceneMetaMap {
+  try {
+    const raw = localStorage.getItem(LEGACY_META_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as SynapserModelMeta;
+    const normalized = normalizeMeta(parsed);
+    if (!normalized) return {};
+    const map: SynapserSceneMetaMap = { manifesto: normalized };
+    writeSynapserSceneMetaMap(map);
+    localStorage.removeItem(LEGACY_META_KEY);
+    return map;
+  } catch {
+    return {};
+  }
+}
+
+function writeSynapserSceneMetaMap(map: SynapserSceneMetaMap) {
   if (typeof window === "undefined") return;
-  if (!meta) {
+  const hasAny = SCENE_IDS.some((id) => map[id]);
+  if (!hasAny) {
     localStorage.removeItem(META_KEY);
     return;
   }
-  localStorage.setItem(META_KEY, JSON.stringify(meta));
+  localStorage.setItem(META_KEY, JSON.stringify(map));
 }
 
-export async function readSynapserModelBlob(): Promise<ArrayBuffer | null> {
+export function readSynapserSceneMeta(sceneId: SynapserSceneId): SynapserModelMeta | null {
+  return readSynapserSceneMetaMap()[sceneId] ?? null;
+}
+
+export async function readSynapserSceneBlob(sceneId: SynapserSceneId): Promise<ArrayBuffer | null> {
   if (typeof window === "undefined") return null;
   try {
     const db = await openDb();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE, "readonly");
-      const req = tx.objectStore(STORE).get(RECORD_ID);
+      const req = tx.objectStore(STORE).get(sceneId);
       req.onerror = () => reject(req.error);
       req.onsuccess = () => resolve((req.result as ArrayBuffer | undefined) ?? null);
     });
@@ -62,7 +112,68 @@ export async function readSynapserModelBlob(): Promise<ArrayBuffer | null> {
   }
 }
 
-export async function writeSynapserModelBlob(
+async function readLegacyBlob(): Promise<ArrayBuffer | null> {
+  if (typeof window === "undefined") return null;
+  try {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, "readonly");
+      const req = tx.objectStore(STORE).get(LEGACY_RECORD_ID);
+      req.onerror = () => reject(req.error);
+      req.onsuccess = () => resolve((req.result as ArrayBuffer | undefined) ?? null);
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function hydrateSynapserSceneModels(): Promise<
+  Partial<Record<SynapserSceneId, { meta: SynapserModelMeta; buffer: ArrayBuffer }>>
+> {
+  const metaMap = readSynapserSceneMetaMap();
+  const result: Partial<Record<SynapserSceneId, { meta: SynapserModelMeta; buffer: ArrayBuffer }>> = {};
+
+  for (const id of SCENE_IDS) {
+    const meta = metaMap[id];
+    if (!meta) continue;
+    const buffer = await readSynapserSceneBlob(id);
+    if (buffer) result[id] = { meta, buffer };
+  }
+
+  if (!result.manifesto) {
+    const legacyMeta = (() => {
+      try {
+        const raw = localStorage.getItem(LEGACY_META_KEY);
+        if (!raw) return null;
+        return normalizeMeta(JSON.parse(raw) as SynapserModelMeta);
+      } catch {
+        return null;
+      }
+    })();
+    const legacyBuffer = await readLegacyBlob();
+    if (legacyMeta && legacyBuffer) {
+      result.manifesto = { meta: legacyMeta, buffer: legacyBuffer };
+      await writeSynapserSceneBlob("manifesto", legacyBuffer, legacyMeta);
+      localStorage.removeItem(LEGACY_META_KEY);
+      try {
+        const db = await openDb();
+        await new Promise<void>((resolve, reject) => {
+          const tx = db.transaction(STORE, "readwrite");
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+          tx.objectStore(STORE).delete(LEGACY_RECORD_ID);
+        });
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  return result;
+}
+
+export async function writeSynapserSceneBlob(
+  sceneId: SynapserSceneId,
   buffer: ArrayBuffer,
   meta: SynapserModelMeta,
 ): Promise<void> {
@@ -71,12 +182,14 @@ export async function writeSynapserModelBlob(
     const tx = db.transaction(STORE, "readwrite");
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
-    tx.objectStore(STORE).put(buffer, RECORD_ID);
+    tx.objectStore(STORE).put(buffer, sceneId);
   });
-  writeSynapserModelMeta(meta);
+  const map = readSynapserSceneMetaMap();
+  map[sceneId] = meta;
+  writeSynapserSceneMetaMap(map);
 }
 
-export async function clearSynapserModel(): Promise<void> {
+export async function clearSynapserScene(sceneId: SynapserSceneId): Promise<void> {
   if (typeof window === "undefined") return;
   try {
     const db = await openDb();
@@ -84,12 +197,14 @@ export async function clearSynapserModel(): Promise<void> {
       const tx = db.transaction(STORE, "readwrite");
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
-      tx.objectStore(STORE).delete(RECORD_ID);
+      tx.objectStore(STORE).delete(sceneId);
     });
   } catch {
     /* ignore */
   }
-  writeSynapserModelMeta(null);
+  const map = readSynapserSceneMetaMap();
+  delete map[sceneId];
+  writeSynapserSceneMetaMap(map);
 }
 
 export function downloadSynapserModel(buffer: ArrayBuffer, fileName: string) {

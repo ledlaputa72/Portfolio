@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { useSynapserModel } from "./SynapserModelContext";
+import { SYNAPSER_SCENES, useSynapserModel } from "./SynapserModelContext";
 import { SYNAPSER_MODEL_ACCEPT } from "@/lib/synapser-model-store";
 
 type SynapserModelSettingsProps = {
@@ -11,10 +11,10 @@ type SynapserModelSettingsProps = {
 export default function SynapserModelSettings({ compact = false }: SynapserModelSettingsProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const {
-    mode,
-    meta,
-    pendingBuffer,
-    scale,
+    selectedScene,
+    setSelectedScene,
+    activeScene,
+    scenes,
     loading,
     loadFile,
     saveModel,
@@ -22,7 +22,10 @@ export default function SynapserModelSettings({ compact = false }: SynapserModel
     setScale,
   } = useSynapserModel();
 
+  const { mode, meta, pendingBuffer, scale } = activeScene;
   const canSave = mode === "custom" && (pendingBuffer !== null || meta !== null);
+  const sceneInfo = SYNAPSER_SCENES.find((s) => s.id === selectedScene)!;
+  const customCount = SYNAPSER_SCENES.filter((s) => scenes[s.id].mode === "custom").length;
 
   return (
     <div
@@ -31,19 +34,43 @@ export default function SynapserModelSettings({ compact = false }: SynapserModel
       }`}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#c9a66b]/80">
             3D Model
           </p>
-          <p className="mt-1 text-sm text-[#f0ebe3]/70">
+
+          <label className="mt-3 block">
+            <span className="text-[10px] uppercase tracking-wider text-[#f0ebe3]/40">씬 선택</span>
+            <select
+              value={selectedScene}
+              onChange={(e) => setSelectedScene(e.target.value as typeof selectedScene)}
+              className="mt-1.5 w-full max-w-xs rounded-lg border border-[#2a2520] bg-[#0f0c0a] px-3 py-2 text-sm text-[#f0ebe3] outline-none transition-colors focus:border-[#c9a66b]/50"
+            >
+              {SYNAPSER_SCENES.map((scene) => {
+                const hasCustom = scenes[scene.id].mode === "custom";
+                return (
+                  <option key={scene.id} value={scene.id}>
+                    {scene.label} ({scene.defaultObject}){hasCustom ? " · 커스텀" : ""}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+
+          <p className="mt-2 text-sm text-[#f0ebe3]/70">
             {loading
               ? "모델 설정 불러오는 중…"
               : mode === "custom"
-                ? meta?.fileName ?? "Custom model"
-                : "기본 프로시저럴 씬 (Torus · Archive · Network)"}
+                ? `${sceneInfo.label}: ${meta?.fileName ?? "Custom model"}`
+                : `${sceneInfo.label}: 기본 ${sceneInfo.defaultObject}`}
           </p>
           {pendingBuffer ? (
             <p className="mt-1 text-xs text-amber-400/80">저장하지 않으면 새로고침 시 사라질 수 있습니다.</p>
+          ) : null}
+          {customCount > 0 ? (
+            <p className="mt-1 text-[11px] text-[#f0ebe3]/35">
+              커스텀 모델 {customCount}/{SYNAPSER_SCENES.length}개 씬에 적용됨
+            </p>
           ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
@@ -102,8 +129,8 @@ export default function SynapserModelSettings({ compact = false }: SynapserModel
       ) : null}
 
       <p className="mt-3 text-[11px] leading-relaxed text-[#f0ebe3]/35">
-        GLB / GLTF 파일을 불러오면 스크롤 3D 씬에 적용됩니다. 저장 시 브라우저에 보관되며 전체 페이지 샘플에서도
-        동일하게 사용됩니다.
+        씬을 선택한 뒤 GLB / GLTF를 불러오면 해당 장면의 3D 오브젝트만 교체됩니다. 저장 시 브라우저에 씬별로
+        보관되며 전체 페이지 샘플에서도 동일하게 사용됩니다.
       </p>
     </div>
   );
