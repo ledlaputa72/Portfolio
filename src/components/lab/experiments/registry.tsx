@@ -49,6 +49,7 @@ import IrisKWaveform from "./IrisKWaveform";
 import IrisKSample from "./IrisKSample";
 import ProduxSplitText from "./ProduxSplitText";
 import ProduxSample from "./ProduxSample";
+import SynapserStudioDemo from "./SynapserStudioDemo";
 import SynapserStudioScroll from "./SynapserStudioScroll";
 import SynapserStudioSample from "./SynapserStudioSample";
 import KvsStudioBreak from "./KvsStudioBreak";
@@ -722,18 +723,18 @@ gsap.set(wordEl, {
     },
   },
   "synapser-studio": {
-    Demo: SynapserStudioScroll,
+    Demo: SynapserStudioDemo,
     Sample: SynapserStudioSample,
     notes: {
       libraries: [
         "@react-three/fiber — Canvas, useFrame, useThree",
-        "@react-three/drei — Float, Line, Text, fog",
-        "LabStickyScroll + gsap ScrollTrigger scrub",
+        "@react-three/drei — Float, Line, useGLTF, fog",
+        "IndexedDB — custom GLB persist across demo + sample pages",
       ],
       points: [
         "400vh sticky pin — progress 0–1을 3개 장면(Manifesto/Archive/Journey)으로 분할, 각 구간마다 독립 3D 오브젝트 세트 scale fade.",
-        "카메라 경로 3키프레임 lerp: 정면 torus → archive 그리드 orbit → network pullback, pointer로 drift 보정.",
-        "Synapse 장면: sphere 노드 + drei Line 링크로 네트워크 비주얼, archive는 3×3 box grid.",
+        "3D Model 메뉴: GLB/GLTF 불러오기 · 저장(IndexedDB + 다운로드) · 기본값 복원 — sample 페이지에도 동일 적용.",
+        "카메라 경로 3키프레임 lerp + pointer drift, custom 모델은 스크롤 visibility에 맞춰 scale.",
         "HTML 타이포 오버레이는 sceneIndex + local progress fade — 3D 씬과 동기화된 scroll-driven storytelling.",
       ],
       snippet: {

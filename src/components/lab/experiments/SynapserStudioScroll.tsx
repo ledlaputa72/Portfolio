@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState, Suspense } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Float, Line } from "@react-three/drei";
+import { Float, Line, useGLTF } from "@react-three/drei";
 import type { Group } from "three";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useSynapserModel } from "./SynapserModelContext";
 
 const SCENES = [
   {
@@ -128,11 +129,34 @@ function SynapseNetwork({ visible }: { visible: number }) {
   );
 }
 
+function CustomImportedModel({ url, scale }: { url: string; scale: number }) {
+  const { scene } = useGLTF(url);
+  const object = useMemo(() => {
+    const clone = scene.clone(true);
+    const box = new THREE.Box3().setFromObject(clone);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    const fit = 2.2 / maxDim;
+    clone.position.set(-center.x * fit, -center.y * fit, -center.z * fit);
+    clone.scale.setScalar(fit * scale);
+    return clone;
+  }, [scene, scale]);
+
+  return (
+    <Float speed={1.2} rotationIntensity={0.35} floatIntensity={0.4}>
+      <primitive object={object} />
+    </Float>
+  );
+}
+
 function ScrollWorld({ progressRef }: { progressRef: React.RefObject<number> }) {
+  const { mode, modelUrl, scale } = useSynapserModel();
   const rootRef = useRef<Group>(null!);
   const manifestoGroupRef = useRef<Group>(null!);
   const archiveGroupRef = useRef<Group>(null!);
   const networkGroupRef = useRef<Group>(null!);
+  const customGroupRef = useRef<Group>(null!);
   const { pointer, camera } = useThree();
 
   useFrame(() => {
@@ -150,6 +174,11 @@ function ScrollWorld({ progressRef }: { progressRef: React.RefObject<number> }) 
     manifestoGroupRef.current.scale.setScalar(manifestoVis);
     archiveGroupRef.current.scale.setScalar(archiveVis);
     networkGroupRef.current.scale.setScalar(networkVis);
+
+    const customVis = Math.max(manifestoVis, archiveVis, networkVis);
+    if (customGroupRef.current) {
+      customGroupRef.current.scale.setScalar(customVis);
+    }
 
     const camX =
       p < 0.5
@@ -181,15 +210,23 @@ function ScrollWorld({ progressRef }: { progressRef: React.RefObject<number> }) 
       <directionalLight position={[4, 6, 3]} intensity={1.1} color="#f5e6d3" />
       <pointLight position={[-3, 2, 2]} intensity={0.5} color="#6b8cce" />
 
-      <group ref={manifestoGroupRef}>
+      <group ref={manifestoGroupRef} visible={mode === "default"}>
         <ManifestoObject visible={1} />
       </group>
-      <group ref={archiveGroupRef} position={[0, -0.2, 0]}>
+      <group ref={archiveGroupRef} position={[0, -0.2, 0]} visible={mode === "default"}>
         <ArchiveGrid visible={1} />
       </group>
-      <group ref={networkGroupRef}>
+      <group ref={networkGroupRef} visible={mode === "default"}>
         <SynapseNetwork visible={1} />
       </group>
+
+      {mode === "custom" && modelUrl ? (
+        <group ref={customGroupRef}>
+          <Suspense fallback={null}>
+            <CustomImportedModel key={modelUrl} url={modelUrl} scale={scale} />
+          </Suspense>
+        </group>
+      ) : null}
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]} receiveShadow>
         <planeGeometry args={[20, 20]} />
