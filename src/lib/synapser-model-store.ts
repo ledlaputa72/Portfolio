@@ -1,4 +1,6 @@
-export type SynapserSceneId = "manifesto" | "archive" | "journey";
+import { DEFAULT_SCENE_DEFINITIONS } from "./synapser-project-state";
+
+export type SynapserSceneId = string;
 
 export type SynapserModelMeta = {
   fileName: string;
@@ -8,15 +10,7 @@ export type SynapserModelMeta = {
 
 export type SynapserSceneMetaMap = Partial<Record<SynapserSceneId, SynapserModelMeta>>;
 
-export const SYNAPSER_SCENES: {
-  id: SynapserSceneId;
-  label: string;
-  defaultObject: string;
-}[] = [
-  { id: "manifesto", label: "Manifesto", defaultObject: "Torus" },
-  { id: "archive", label: "Archive", defaultObject: "Grid" },
-  { id: "journey", label: "Journey", defaultObject: "Network" },
-];
+export const SYNAPSER_SCENES = DEFAULT_SCENE_DEFINITIONS;
 
 const META_KEY = "synapser-model-meta-v2";
 const LEGACY_META_KEY = "synapser-model-meta";
@@ -24,8 +18,6 @@ const DB_NAME = "portfolio-synapser-models";
 const DB_VERSION = 1;
 const STORE = "models";
 const LEGACY_RECORD_ID = "custom";
-
-const SCENE_IDS: SynapserSceneId[] = ["manifesto", "archive", "journey"];
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -54,12 +46,10 @@ export function readSynapserSceneMetaMap(): SynapserSceneMetaMap {
     if (!raw) return migrateLegacyMeta();
     const parsed = JSON.parse(raw) as SynapserSceneMetaMap;
     const result: SynapserSceneMetaMap = {};
-    for (const id of SCENE_IDS) {
-      const meta = parsed[id];
-      if (meta) {
-        const normalized = normalizeMeta(meta);
-        if (normalized) result[id] = normalized;
-      }
+    for (const [id, meta] of Object.entries(parsed)) {
+      if (!meta) continue;
+      const normalized = normalizeMeta(meta);
+      if (normalized) result[id] = normalized;
     }
     return result;
   } catch {
@@ -85,7 +75,7 @@ function migrateLegacyMeta(): SynapserSceneMetaMap {
 
 function writeSynapserSceneMetaMap(map: SynapserSceneMetaMap) {
   if (typeof window === "undefined") return;
-  const hasAny = SCENE_IDS.some((id) => map[id]);
+  const hasAny = Object.keys(map).length > 0;
   if (!hasAny) {
     localStorage.removeItem(META_KEY);
     return;
@@ -127,13 +117,15 @@ async function readLegacyBlob(): Promise<ArrayBuffer | null> {
   }
 }
 
-export async function hydrateSynapserSceneModels(): Promise<
-  Partial<Record<SynapserSceneId, { meta: SynapserModelMeta; buffer: ArrayBuffer }>>
-> {
+export async function hydrateSynapserSceneModels(
+  sceneIds?: SynapserSceneId[],
+): Promise<Partial<Record<SynapserSceneId, { meta: SynapserModelMeta; buffer: ArrayBuffer }>>> {
   const metaMap = readSynapserSceneMetaMap();
-  const result: Partial<Record<SynapserSceneId, { meta: SynapserModelMeta; buffer: ArrayBuffer }>> = {};
+  const ids = sceneIds ?? Object.keys(metaMap);
+  const result: Partial<Record<SynapserSceneId, { meta: SynapserModelMeta; buffer: ArrayBuffer }>> =
+    {};
 
-  for (const id of SCENE_IDS) {
+  for (const id of ids) {
     const meta = metaMap[id];
     if (!meta) continue;
     const buffer = await readSynapserSceneBlob(id);

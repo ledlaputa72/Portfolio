@@ -54,6 +54,9 @@ export const SCENE_SETTING_TIPS = {
   sectionMotion: "오브젝트 플로팅·회전·마우스 반응 설정입니다.",
   sectionCamera: "카메라 위치·시야·마우스 오빗·호버 줌 설정입니다.",
   sectionCameraAnim: "스크롤/시간 기반 카메라 키프레임 애니메이션입니다.",
+  sectionTypography: "씬 타이틀·서브타이틀 그룹의 화면 위치입니다.",
+  typographyAlignX: "타이틀 그룹의 좌우 정렬입니다.",
+  typographyAlignY: "타이틀 그룹의 상·중·하 위치입니다.",
 } as const;
 
 export const MODEL_SETTING_TIPS = {

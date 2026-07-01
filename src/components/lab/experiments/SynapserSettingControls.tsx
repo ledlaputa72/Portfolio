@@ -152,6 +152,52 @@ export function TipColorField({
   );
 }
 
+export function TipSegmentRow<T extends string>({
+  label,
+  tip,
+  value,
+  options,
+  onChange,
+  labelWidth = "w-32",
+}: {
+  label: string;
+  tip: string;
+  value: T;
+  options: { id: T; label: string }[];
+  onChange: (value: T) => void;
+  labelWidth?: string;
+}) {
+  return (
+    <div className="group/tip relative">
+      <div className="flex cursor-help items-center gap-2 text-[11px] text-[#f0ebe3]/55">
+        <span className={`${labelWidth} shrink-0 uppercase tracking-wider`}>{label}</span>
+        <div className="flex flex-wrap gap-1">
+          {options.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => onChange(option.id)}
+              className={`rounded-md border px-2 py-1 text-[10px] uppercase tracking-wider transition-colors ${
+                value === option.id
+                  ? "border-[#c9a66b] bg-[#c9a66b]/15 text-[#f0ebe3]"
+                  : "border-[#2a2520] text-[#f0ebe3]/45 hover:border-[#3a3530] hover:text-[#f0ebe3]/70"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute left-0 top-full z-50 mt-1 hidden w-56 rounded-lg border border-[#3a3530] bg-[#0a0806] px-2.5 py-2 text-[10px] font-normal normal-case leading-relaxed tracking-normal text-[#f0ebe3]/85 shadow-xl group-hover/tip:block"
+      >
+        {tip}
+      </span>
+    </div>
+  );
+}
+
 export function TipSection({
   title,
   tip,

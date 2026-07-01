@@ -6,11 +6,13 @@ import * as THREE from "three";
 import type { SynapserScrollGlitchSettings } from "@/lib/synapser-scroll-glitch";
 import {
   computeSynapserObjectGlitchIntensity,
-  getSynapserObjectGlitchDisplay,
+  DEFAULT_SYNAPSER_SCROLL_GLITCH,
+  getSynapserObjectGlitchDisplayFromLevel,
   parseSynapserHexColor,
 } from "@/lib/synapser-scroll-glitch";
 import { getCinematicSceneVisibilities, type SynapserSceneId } from "@/lib/synapser-scene-settings";
 import type { SynapserObjectHoverState } from "./synapser-object-hover";
+import { useSynapserModel } from "./SynapserModelContext";
 
 const vertexShader = /* glsl */ `
 uniform float uTime;
@@ -193,7 +195,7 @@ function syncGlitchMaterialUniforms(
 
 type SynapserMeshGlitchBinderProps = {
   children: ReactNode;
-  glitchRef: React.RefObject<number>;
+  displayGlitchRef: React.RefObject<number>;
   progressRef: React.RefObject<number>;
   sceneId: SynapserSceneId;
   settings: SynapserScrollGlitchSettings;
@@ -202,12 +204,13 @@ type SynapserMeshGlitchBinderProps = {
 
 export default function SynapserMeshGlitchBinder({
   children,
-  glitchRef,
+  displayGlitchRef,
   progressRef,
   sceneId,
   settings,
   objectHoverRef,
 }: SynapserMeshGlitchBinderProps) {
+  const { sceneOrder } = useSynapserModel();
   const rootRef = useRef<THREE.Group>(null);
   const shellsRef = useRef<Map<THREE.Mesh, GlitchShell>>(new Map());
   const scanFrame = useRef(0);
@@ -259,15 +262,15 @@ export default function SynapserMeshGlitchBinder({
   useFrame(({ clock }) => {
     if (scanFrame.current++ % 15 === 0) syncShells();
 
-    const vis = getCinematicSceneVisibilities(progressRef.current)[sceneId];
-    const layer = settings.object;
-    const hover =
-      objectHoverRef.current.sceneId === sceneId ? objectHoverRef.current.blend : 0;
+    const vis = getCinematicSceneVisibilities(progressRef?.current ?? 0, sceneOrder)[sceneId] ?? 0;
+    const layer = settings.object ?? DEFAULT_SYNAPSER_SCROLL_GLITCH.object;
+    const hoverState = objectHoverRef?.current;
+    const hover = hoverState?.sceneId === sceneId ? hoverState.blend : 0;
 
     const idlePhase = 0.5 + 0.5 * Math.sin(clock.elapsedTime * layer.idlePulseSpeed);
     const scrollBurst =
       settings.enabled && layer.enabled
-        ? getSynapserObjectGlitchDisplay(glitchRef, settings) * vis
+        ? getSynapserObjectGlitchDisplayFromLevel(displayGlitchRef?.current ?? 0, settings) * vis
         : 0;
     const glitch = computeSynapserObjectGlitchIntensity({
       settings,

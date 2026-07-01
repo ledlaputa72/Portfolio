@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  createRef,
   useEffect,
   useMemo,
   useRef,
@@ -29,45 +30,38 @@ import { useSynapserModel } from "./SynapserModelContext";
 import SynapserScrollGlitchOverlay, {
   synapserGlitchTextStyle,
 } from "./SynapserScrollGlitchOverlay";
-import { applySynapserScrollGlitch, getSynapserFlatGlitchDisplay, getSynapserGlitchDisplay, getSynapserParticleNoiseDisplay } from "@/lib/synapser-scroll-glitch";
+import { applySynapserScrollGlitch, DEFAULT_SYNAPSER_SCROLL_GLITCH, getSynapserFlatGlitchDisplayFromLevel, getSynapserFlatGlitchTransitionMs, getSynapserGlitchDisplay, getSynapserParticleNoiseFromDisplay } from "@/lib/synapser-scroll-glitch";
 import type { SynapserScrollGlitchSettings } from "@/lib/synapser-scroll-glitch";
+import type { SynapserSceneDefinition, SynapserProceduralType } from "@/lib/synapser-project-state";
 import {
   cinematicZoomT,
   getActiveSceneIndex,
   getCinematicCamera,
   getCinematicSceneVisibilities,
   getSceneLocalProgress,
-  getSceneVisibilities,
+  getSynapserTypographyLayoutClasses,
+  normalizeSynapserTypography,
   sampleCameraKeyframes,
+  sceneDefaults,
   type SynapserSceneId,
   type SynapserSceneSettings,
+  type SynapserTypographySettings,
 } from "@/lib/synapser-scene-settings";
-
-const SCENES = [
-  {
-    id: "manifesto" as const,
-    label: "MANIFESTO",
-    kicker: "Lisbon Digital Atelier",
-    body: "Craft meets cinematic scroll.",
-  },
-  {
-    id: "archive" as const,
-    label: "ARCHIVE",
-    kicker: "Selected Works",
-    body: "Projects drift into focus.",
-  },
-  {
-    id: "journey" as const,
-    label: "JOURNEY",
-    kicker: "Synapser Network",
-    body: "Nodes connect — ideas flow.",
-  },
-];
-
-const SCENE_IDS: SynapserSceneId[] = ["manifesto", "archive", "journey"];
 
 /** Floor plane spans far enough that cinematic camera angles never clip edges. */
 const FLOOR_PLANE_SIZE = 20 * 100;
+
+function SceneProcedural({ type }: { type: SynapserProceduralType }) {
+  switch (type) {
+    case "grid":
+      return <ArchiveGrid visible={1} />;
+    case "network":
+      return <SynapseNetwork visible={1} />;
+    case "torus":
+    default:
+      return <ManifestoObject visible={1} />;
+  }
+}
 
 const NODE_POSITIONS: [number, number, number][] = [
   [0, 0, 0],
@@ -226,16 +220,18 @@ function SceneLights({
   sceneId,
   lighting,
   progressRef,
+  sceneOrder,
 }: {
   sceneId: SynapserSceneId;
   lighting: SynapserSceneSettings["lighting"];
   progressRef: React.RefObject<number>;
+  sceneOrder: SynapserSceneId[];
 }) {
   const ambientRef = useRef<THREE.AmbientLight>(null);
   const lightRefs = useRef<(THREE.Light | null)[]>([]);
 
   useFrame(() => {
-    const visibility = getSceneVisibilities(progressRef.current)[sceneId];
+    const visibility = getCinematicSceneVisibilities(progressRef.current, sceneOrder)[sceneId] ?? 0;
     if (ambientRef.current) {
       ambientRef.current.intensity = lighting.ambientIntensity * visibility;
       ambientRef.current.visible = visibility > 0.001;
@@ -301,7 +297,7 @@ function AnimatedSceneContent({
   children: ReactNode;
 }) {
   const { sceneSettings } = useSynapserModel();
-  const motion = sceneSettings[sceneId].objectMotion;
+  const motion = sceneSettings[sceneId]?.objectMotion ?? sceneDefaults().objectMotion;
   const groupRef = useRef<Group>(null);
   const floatGroupRef = useRef<Group>(null);
   const { pointer } = useThree();
@@ -348,14 +344,14 @@ function AnimatedSceneContent({
 function SceneObject({
   sceneId,
   procedural,
-  glitchRef,
+  displayGlitchRef,
   progressRef,
   scrollGlitch,
   objectHoverRef,
 }: {
   sceneId: SynapserSceneId;
   procedural: ReactNode;
-  glitchRef: React.RefObject<number>;
+  displayGlitchRef: React.RefObject<number>;
   progressRef: React.RefObject<number>;
   scrollGlitch: SynapserScrollGlitchSettings;
   objectHoverRef: React.RefObject<SynapserObjectHoverState>;
@@ -366,7 +362,7 @@ function SceneObject({
   return (
     <AnimatedSceneContent sceneId={sceneId}>
       <SynapserMeshGlitchBinder
-        glitchRef={glitchRef}
+        displayGlitchRef={displayGlitchRef}
         progressRef={progressRef}
         sceneId={sceneId}
         settings={scrollGlitch}
@@ -384,26 +380,47 @@ function SceneObject({
   );
 }
 
-function EnvironmentController({ progressRef }: { progressRef: React.RefObject<number> }) {
-  const { sceneSettings } = useSynapserModel();
+function EnvironmentController({
+  progressRef,
+  sceneOrder,
+  sceneSettings,
+}: {
+  progressRef: React.RefObject<number>;
+  sceneOrder: SynapserSceneId[];
+  sceneSettings: Record<SynapserSceneId, SynapserSceneSettings>;
+}) {
   const { scene, gl } = useThree();
   const fogRef = useRef<THREE.Fog | null>(null);
 
   useFrame(() => {
-    const vis = getCinematicSceneVisibilities(progressRef.current);
+    const vis = getCinematicSceneVisibilities(progressRef.current, sceneOrder);
     const canvasColor = blendHex(
-      SCENE_IDS.map((id) => ({ hex: sceneSettings[id].background.canvasColor, weight: vis[id] })),
+      sceneOrder.map((id) => ({
+        hex: sceneSettings[id]?.background.canvasColor ?? "#0f0c0a",
+        weight: vis[id] ?? 0,
+      })),
     );
     const fogColor = blendHex(
-      SCENE_IDS.map((id) => ({ hex: sceneSettings[id].background.fogColor, weight: vis[id] })),
+      sceneOrder.map((id) => ({
+        hex: sceneSettings[id]?.background.fogColor ?? "#0f0c0a",
+        weight: vis[id] ?? 0,
+      })),
     );
-    const fogNear = weightedAverage(
-      SCENE_IDS.map((id) => ({ value: sceneSettings[id].background.fogNear, weight: vis[id] })),
+    const fogNear = Math.max(
+      0.1,
+      weightedAverage(
+        sceneOrder.map((id) => ({ value: sceneSettings[id]?.background.fogNear ?? 4, weight: vis[id] ?? 0 })),
+      ),
     );
-    const fogFar = weightedAverage(
-      SCENE_IDS.map((id) => ({ value: sceneSettings[id].background.fogFar, weight: vis[id] })),
+    const fogFar = Math.max(
+      fogNear + 0.5,
+      weightedAverage(
+        sceneOrder.map((id) => ({ value: sceneSettings[id]?.background.fogFar ?? 14, weight: vis[id] ?? 0 })),
+      ),
     );
-    const fogEnabled = SCENE_IDS.some((id) => sceneSettings[id].background.fogEnabled && vis[id] > 0.05);
+    const fogEnabled = sceneOrder.some(
+      (id) => sceneSettings[id]?.background.fogEnabled && (vis[id] ?? 0) > 0.05,
+    );
 
     gl.setClearColor(canvasColor);
     if (fogEnabled) {
@@ -422,25 +439,14 @@ function EnvironmentController({ progressRef }: { progressRef: React.RefObject<n
 
 function ScrollWorld({
   progressRef,
-  glitchRef,
+  displayGlitchRef,
 }: {
   progressRef: React.RefObject<number>;
-  glitchRef: React.RefObject<number>;
+  displayGlitchRef: React.RefObject<number>;
 }) {
-  const { sceneSettings, scrollGlitch } = useSynapserModel();
-  const manifestoGroupRef = useRef<Group>(null!);
-  const archiveGroupRef = useRef<Group>(null!);
-  const networkGroupRef = useRef<Group>(null!);
-  const groupRefs: Record<SynapserSceneId, React.RefObject<Group>> = {
-    manifesto: manifestoGroupRef,
-    archive: archiveGroupRef,
-    journey: networkGroupRef,
-  };
-  const timeRefs = useRef<Record<SynapserSceneId, number>>({
-    manifesto: 0,
-    archive: 0,
-    journey: 0,
-  });
+  const { sceneList, sceneOrder, sceneSettings, scrollGlitchMap } = useSynapserModel();
+  const groupRefs = useRef<Record<SynapserSceneId, React.RefObject<Group | null>>>({});
+  const timeRefs = useRef<Record<SynapserSceneId, number>>({});
   const { pointer, camera } = useThree();
   const lookAtTarget = useRef(new THREE.Vector3());
   const objectHoverRef = useRef<SynapserObjectHoverState>({ blend: 0, sceneId: null });
@@ -449,9 +455,18 @@ function ScrollWorld({
   const meshScanFrame = useRef(0);
   const smoothedPointer = useRef({ x: 0, y: 0 });
 
+  const sceneCount = sceneOrder.length;
+
+  const getGroupRef = (id: SynapserSceneId) => {
+    if (!groupRefs.current[id]) {
+      groupRefs.current[id] = createRef<Group>();
+    }
+    return groupRefs.current[id];
+  };
+
   useFrame((state, delta) => {
     const p = progressRef.current;
-    const vis = getCinematicSceneVisibilities(p);
+    const vis = getCinematicSceneVisibilities(p, sceneOrder);
 
     let posX = 0;
     let posY = 0;
@@ -471,15 +486,17 @@ function ScrollWorld({
     let orbitDamp = 0;
     let orbitEdgePower = 0;
 
-    SCENE_IDS.forEach((id, index) => {
-      const weight = vis[id];
+    sceneOrder.forEach((id, index) => {
+      const weight = vis[id] ?? 0;
       const settings = sceneSettings[id];
-      const localP = getSceneLocalProgress(p, index);
-
-      groupRefs[id].current.scale.setScalar(weight);
+      if (!settings) return;
+      const localP = getSceneLocalProgress(p, index, sceneCount);
+      const groupRef = getGroupRef(id);
+      if (groupRef.current) groupRef.current.scale.setScalar(weight);
 
       if (weight <= 0.001) return;
 
+      if (timeRefs.current[id] === undefined) timeRefs.current[id] = 0;
       timeRefs.current[id] += delta;
       orbitYaw += settings.camera.pointerDriftX * weight;
       orbitPitch += settings.camera.pointerDriftY * weight;
@@ -541,14 +558,17 @@ function ScrollWorld({
       orbitDamp /= total;
       orbitEdgePower /= total;
     } else {
-      const cam = sceneSettings.manifesto.camera;
-      orbitYaw = cam.pointerDriftX;
-      orbitPitch = cam.pointerDriftY;
-      hoverZoomPull = cam.hoverZoomPull;
-      hoverZoomFovPull = cam.hoverZoomFovPull;
-      hoverZoomDamp = cam.hoverZoomDamp;
-      orbitDamp = cam.orbitDamp;
-      orbitEdgePower = cam.orbitEdgePower;
+      const fallbackId = sceneOrder[0];
+      const cam = fallbackId ? sceneSettings[fallbackId]?.camera : undefined;
+      if (cam) {
+        orbitYaw = cam.pointerDriftX;
+        orbitPitch = cam.pointerDriftY;
+        hoverZoomPull = cam.hoverZoomPull;
+        hoverZoomFovPull = cam.hoverZoomFovPull;
+        hoverZoomDamp = cam.hoverZoomDamp;
+        orbitDamp = cam.orbitDamp;
+        orbitEdgePower = cam.orbitEdgePower;
+      }
     }
 
     smoothedPointer.current.x = THREE.MathUtils.damp(
@@ -583,9 +603,11 @@ function ScrollWorld({
 
     if (meshScanFrame.current++ % 20 === 0) {
       const nextMeshes: THREE.Object3D[] = [];
-      SCENE_IDS.forEach((id) => {
-        if (vis[id] < 0.05) return;
-        groupRefs[id].current.traverse((obj) => {
+      sceneOrder.forEach((id) => {
+        if ((vis[id] ?? 0) < 0.05) return;
+        const groupRef = getGroupRef(id);
+        if (!groupRef.current) return;
+        groupRef.current.traverse((obj) => {
           if (!(obj instanceof THREE.Mesh)) return;
           if (obj.userData.synapserGlitchShell || obj.userData.synapserFloor) return;
           nextMeshes.push(obj);
@@ -601,16 +623,8 @@ function ScrollWorld({
       if (hits.length > 0) {
         let node: THREE.Object3D | null = hits[0].object;
         while (node) {
-          if (node === manifestoGroupRef.current) {
-            hoveredScene = "manifesto";
-            break;
-          }
-          if (node === archiveGroupRef.current) {
-            hoveredScene = "archive";
-            break;
-          }
-          if (node === networkGroupRef.current) {
-            hoveredScene = "journey";
+          if (typeof node.userData.synapserSceneId === "string") {
+            hoveredScene = node.userData.synapserSceneId;
             break;
           }
           node = node.parent;
@@ -649,147 +663,132 @@ function ScrollWorld({
 
   return (
     <>
-      <EnvironmentController progressRef={progressRef} />
+      <EnvironmentController
+        progressRef={progressRef}
+        sceneOrder={sceneOrder}
+        sceneSettings={sceneSettings}
+      />
 
-      <group ref={manifestoGroupRef}>
-        <SceneLights
-          sceneId="manifesto"
-          lighting={sceneSettings.manifesto.lighting}
-          progressRef={progressRef}
-        />
-        <SceneObject
-          sceneId="manifesto"
-          procedural={<ManifestoObject visible={1} />}
-          glitchRef={glitchRef}
-          progressRef={progressRef}
-          scrollGlitch={scrollGlitch}
-          objectHoverRef={objectHoverRef}
-        />
-        {sceneSettings.manifesto.background.floorVisible ? (
-          <mesh
-            rotation={[-Math.PI / 2, 0, 0]}
-            position={[0, sceneSettings.manifesto.background.floorY, 0]}
-            receiveShadow
-            userData={{ synapserFloor: true }}
+      {sceneList.map((def) => {
+        const settings = sceneSettings[def.id];
+        if (!settings) return null;
+        return (
+          <group
+            key={def.id}
+            ref={getGroupRef(def.id)}
+            userData={{ synapserSceneId: def.id }}
           >
-            <planeGeometry args={[FLOOR_PLANE_SIZE, FLOOR_PLANE_SIZE]} />
-            <meshStandardMaterial color={sceneSettings.manifesto.background.floorColor} roughness={0.9} />
-          </mesh>
-        ) : null}
-      </group>
-
-      <group ref={archiveGroupRef}>
-        <SceneLights
-          sceneId="archive"
-          lighting={sceneSettings.archive.lighting}
-          progressRef={progressRef}
-        />
-        <SceneObject
-          sceneId="archive"
-          procedural={<ArchiveGrid visible={1} />}
-          glitchRef={glitchRef}
-          progressRef={progressRef}
-          scrollGlitch={scrollGlitch}
-          objectHoverRef={objectHoverRef}
-        />
-        {sceneSettings.archive.background.floorVisible ? (
-          <mesh
-            rotation={[-Math.PI / 2, 0, 0]}
-            position={[0, sceneSettings.archive.background.floorY, 0]}
-            receiveShadow
-            userData={{ synapserFloor: true }}
-          >
-            <planeGeometry args={[FLOOR_PLANE_SIZE, FLOOR_PLANE_SIZE]} />
-            <meshStandardMaterial color={sceneSettings.archive.background.floorColor} roughness={0.9} />
-          </mesh>
-        ) : null}
-      </group>
-
-      <group ref={networkGroupRef}>
-        <SceneLights
-          sceneId="journey"
-          lighting={sceneSettings.journey.lighting}
-          progressRef={progressRef}
-        />
-        <SceneObject
-          sceneId="journey"
-          procedural={<SynapseNetwork visible={1} />}
-          glitchRef={glitchRef}
-          progressRef={progressRef}
-          scrollGlitch={scrollGlitch}
-          objectHoverRef={objectHoverRef}
-        />
-        {sceneSettings.journey.background.floorVisible ? (
-          <mesh
-            rotation={[-Math.PI / 2, 0, 0]}
-            position={[0, sceneSettings.journey.background.floorY, 0]}
-            receiveShadow
-            userData={{ synapserFloor: true }}
-          >
-            <planeGeometry args={[FLOOR_PLANE_SIZE, FLOOR_PLANE_SIZE]} />
-            <meshStandardMaterial color={sceneSettings.journey.background.floorColor} roughness={0.9} />
-          </mesh>
-        ) : null}
-      </group>
+            <SceneLights
+              sceneId={def.id}
+              lighting={settings.lighting}
+              progressRef={progressRef}
+              sceneOrder={sceneOrder}
+            />
+            <SceneObject
+              sceneId={def.id}
+              procedural={<SceneProcedural type={def.procedural} />}
+              displayGlitchRef={displayGlitchRef}
+              progressRef={progressRef}
+              scrollGlitch={scrollGlitchMap[def.id] ?? scrollGlitchMap[sceneOrder[0]]}
+              objectHoverRef={objectHoverRef}
+            />
+            {settings.background.floorVisible ? (
+              <mesh
+                rotation={[-Math.PI / 2, 0, 0]}
+                position={[0, settings.background.floorY, 0]}
+                receiveShadow
+                userData={{ synapserFloor: true }}
+              >
+                <planeGeometry args={[FLOOR_PLANE_SIZE, FLOOR_PLANE_SIZE]} />
+                <meshStandardMaterial color={settings.background.floorColor} roughness={0.9} />
+              </mesh>
+            ) : null}
+          </group>
+        );
+      })}
     </>
   );
 }
 
 function SceneTypography({
-  sceneIndex,
+  scene,
   opacity,
   flatGlitchUi,
   flat,
+  typography,
 }: {
-  sceneIndex: number;
+  scene: SynapserSceneDefinition;
   opacity: number;
   flatGlitchUi: number;
   flat: SynapserScrollGlitchSettings["flat"];
+  typography: SynapserTypographySettings;
 }) {
-  const scene = SCENES[sceneIndex] ?? SCENES[0];
+  const layout = getSynapserTypographyLayoutClasses(typography);
+  const transitionMs = getSynapserFlatGlitchTransitionMs(flat);
   const glitchStyle = synapserGlitchTextStyle(flatGlitchUi, flat);
   const kickerStyle =
-    flat.enabled && flatGlitchUi > 0.15
+    flat.enabled && flatGlitchUi > 0.2
       ? {
-          textShadow: `${Math.round(flatGlitchUi * 7 * flat.rgbShift)}px 0 rgba(255,0,120,0.85), ${-Math.round(flatGlitchUi * 7 * flat.rgbShift)}px 0 rgba(0,220,255,0.8)`,
+          textShadow: `${Math.round(flatGlitchUi * 6 * flat.rgbShift)}px 0 rgba(255,0,120,0.7), ${-Math.round(flatGlitchUi * 6 * flat.rgbShift)}px 0 rgba(0,220,255,0.6)`,
         }
       : undefined;
+  const motionStyle = {
+    transitionDuration: `${transitionMs}ms`,
+    transitionProperty: "color, text-shadow, transform, opacity",
+  } as const;
 
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 bottom-28 z-10 px-8 sm:px-14"
-      style={{ opacity }}
+      className={layout.container}
+      style={{
+        opacity,
+        transform: layout.transform,
+      }}
     >
       <p
-        className="text-[10px] uppercase tracking-[0.4em] text-[#c9a66b]/80 transition-all duration-75"
-        style={kickerStyle}
+        className="text-[10px] uppercase tracking-[0.4em] text-[#c9a66b]/80"
+        style={{ ...kickerStyle, ...motionStyle }}
       >
         {scene.kicker}
       </p>
       <h3
-        className="mt-2 text-4xl font-bold tracking-tight text-[#f0ebe3] sm:text-6xl transition-all duration-75"
-        style={glitchStyle}
+        className="mt-2 text-4xl font-bold tracking-tight text-[#f0ebe3] sm:text-6xl"
+        style={{ ...glitchStyle, ...motionStyle }}
       >
         {scene.label}
       </h3>
-      <p className="mt-3 max-w-md text-sm text-[#f0ebe3]/55">{scene.body}</p>
+      <p className={`mt-3 text-sm text-[#f0ebe3]/55 ${layout.body}`} style={motionStyle}>
+        {scene.body}
+      </p>
     </div>
   );
 }
 
 export default function SynapserStudioScroll() {
-  const { sceneSettings, scrollGlitch } = useSynapserModel();
+  const { sceneSettings, sceneList, sceneOrder, scrollGlitchMap } = useSynapserModel();
   const progressRef = useRef(0);
   const glitchRef = useRef(0);
+  const displayGlitchRef = useRef(0);
   const prevSceneRef = useRef(0);
   const prevProgressRef = useRef(0);
+  const sceneIndexRef = useRef(0);
   const [sceneIndex, setSceneIndex] = useState(0);
   const [sceneLocalPercent, setSceneLocalPercent] = useState(0);
   const [typoOpacity, setTypoOpacity] = useState(1);
   const [glitchUi, setGlitchUi] = useState(0);
   const [flatGlitchUi, setFlatGlitchUi] = useState(0);
   const [particleNoiseUi, setParticleNoiseUi] = useState(0);
-  const initial = sceneSettings.manifesto.cinematicScroll;
+  const sceneCount = sceneOrder.length;
+  const firstSceneId = sceneOrder[0];
+  const initial = firstSceneId ? sceneSettings[firstSceneId]?.cinematicScroll : sceneDefaults().cinematicScroll;
+  const activeSceneId = sceneOrder[sceneIndex] ?? firstSceneId ?? "";
+  const activeSceneDef = sceneList.find((s) => s.id === activeSceneId) ?? sceneList[0];
+  const activeScrollGlitch =
+    (activeSceneId ? scrollGlitchMap[activeSceneId] : undefined) ??
+    (firstSceneId ? scrollGlitchMap[firstSceneId] : undefined);
+  const activeTypography = normalizeSynapserTypography(
+    activeSceneId ? sceneSettings[activeSceneId]?.typography : undefined,
+  );
 
   useEffect(() => {
     let frame = 0;
@@ -797,46 +796,73 @@ export default function SynapserStudioScroll() {
       setter((prev) => (Math.abs(prev - next) < 0.002 ? prev : next));
     };
     const tick = () => {
+      const idx = sceneIndexRef.current;
+      const sceneId = sceneOrder[idx] ?? sceneOrder[0];
+      const scrollGlitch =
+        (sceneId ? scrollGlitchMap[sceneId] : undefined) ??
+        (sceneOrder[0] ? scrollGlitchMap[sceneOrder[0]] : undefined);
+      if (!scrollGlitch) {
+        frame = requestAnimationFrame(tick);
+        return;
+      }
       if (scrollGlitch.enabled) {
         glitchRef.current *= scrollGlitch.decayRate;
         if (glitchRef.current < 0.01) glitchRef.current = 0;
       } else {
         glitchRef.current = 0;
       }
-      setIfChanged(setGlitchUi, getSynapserGlitchDisplay(glitchRef, scrollGlitch));
-      setIfChanged(setFlatGlitchUi, getSynapserFlatGlitchDisplay(glitchRef, scrollGlitch));
+      const target = getSynapserGlitchDisplay(glitchRef, scrollGlitch);
+      const lerp = scrollGlitch.displayLerp;
+      displayGlitchRef.current += (target - displayGlitchRef.current) * lerp;
+      const display = displayGlitchRef.current;
+      setIfChanged(setGlitchUi, display);
+      setIfChanged(
+        setFlatGlitchUi,
+        getSynapserFlatGlitchDisplayFromLevel(display, scrollGlitch),
+      );
       setIfChanged(
         setParticleNoiseUi,
-        getSynapserParticleNoiseDisplay(glitchRef, scrollGlitch),
+        getSynapserParticleNoiseFromDisplay(display, scrollGlitch),
       );
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [scrollGlitch]);
+  }, [scrollGlitchMap, sceneOrder]);
 
   const handleProgress = useCallback(
     (p: number) => {
       progressRef.current = p;
 
-      const idx = applySynapserScrollGlitch({
-        progress: p,
-        prevSceneIndex: prevSceneRef.current,
-        prevProgress: prevProgressRef.current,
-        glitchRef,
-        settings: scrollGlitch,
-      });
-      prevSceneRef.current = idx;
-      prevProgressRef.current = p;
+      const idx = getActiveSceneIndex(p, sceneCount);
+      const sceneId = sceneOrder[idx] ?? sceneOrder[0];
+      const scrollGlitch =
+        (sceneId ? scrollGlitchMap[sceneId] : undefined) ??
+        (sceneOrder[0] ? scrollGlitchMap[sceneOrder[0]] : undefined);
 
-      setSceneIndex((prev) => (prev === idx ? prev : idx));
-      const local = getSceneLocalProgress(p, idx);
+      const nextIdx =
+        scrollGlitch != null
+          ? applySynapserScrollGlitch({
+              progress: p,
+              prevSceneIndex: prevSceneRef.current,
+              prevProgress: prevProgressRef.current,
+              glitchRef,
+              settings: scrollGlitch,
+              sceneCount,
+            })
+          : idx;
+      prevSceneRef.current = nextIdx;
+      prevProgressRef.current = p;
+      sceneIndexRef.current = nextIdx;
+
+      setSceneIndex((prev) => (prev === nextIdx ? prev : nextIdx));
+      const local = getSceneLocalProgress(p, nextIdx, sceneCount);
       const nextPercent = Math.round(local * 100);
       setSceneLocalPercent((prev) => (prev === nextPercent ? prev : nextPercent));
       const fadeEdge = local < 0.08 ? local / 0.08 : local > 0.92 ? (1 - local) / 0.08 : 1;
       setTypoOpacity((prev) => (Math.abs(prev - fadeEdge) < 0.001 ? prev : fadeEdge));
     },
-    [scrollGlitch],
+    [scrollGlitchMap, sceneOrder, sceneCount],
   );
 
   return (
@@ -852,31 +878,52 @@ export default function SynapserStudioScroll() {
       <div className="relative h-full w-full">
       <Canvas
         camera={{
-          position: [0, 1.4, initial.distanceFar],
-          fov: sceneSettings.manifesto.camera.fov,
+          position: [0, 1.4, initial?.distanceFar ?? 8],
+          fov: (firstSceneId ? sceneSettings[firstSceneId]?.camera.fov : undefined) ?? 45,
           near: 0.1,
           far: 100,
         }}
         dpr={[1, 2]}
       >
-        <ScrollWorld progressRef={progressRef} glitchRef={glitchRef} />
+        <ScrollWorld progressRef={progressRef} displayGlitchRef={displayGlitchRef} />
       </Canvas>
 
-      <SynapserScrollGlitchOverlay
-        glitchRef={glitchRef}
-        particleNoiseUi={particleNoiseUi}
-        settings={scrollGlitch}
-      />
+      {activeScrollGlitch ? (
+        <SynapserScrollGlitchOverlay
+          displayGlitchRef={displayGlitchRef}
+          particleNoiseUi={particleNoiseUi}
+          settings={activeScrollGlitch}
+        />
+      ) : null}
 
-      <SceneTypography
-        sceneIndex={sceneIndex}
-        opacity={typoOpacity}
-        flatGlitchUi={flatGlitchUi}
-        flat={scrollGlitch.flat}
-      />
+      {activeSceneDef ? (
+        <SceneTypography
+          scene={activeSceneDef}
+          opacity={typoOpacity}
+          flatGlitchUi={flatGlitchUi}
+          flat={activeScrollGlitch?.flat ?? DEFAULT_SYNAPSER_SCROLL_GLITCH.flat}
+          typography={activeTypography}
+        />
+      ) : null}
+
+      {glitchUi > 0.55 ? (
+        <div
+          className="pointer-events-none absolute inset-0 z-20 mix-blend-overlay"
+          style={{
+            backgroundImage: `repeating-linear-gradient(
+              0deg,
+              transparent,
+              transparent 2px,
+              rgba(0,0,0,${glitchUi * 0.08}) 2px,
+              rgba(0,0,0,${glitchUi * 0.08}) 4px
+            )`,
+          }}
+          aria-hidden
+        />
+      ) : null}
 
       <div className="pointer-events-none absolute left-6 top-14 z-10 font-mono text-[10px] text-[#f0ebe3]/35">
-        SCENE {sceneIndex + 1} / {SCENES.length}
+        SCENE {sceneIndex + 1} / {sceneCount}
       </div>
 
       <div className="pointer-events-none absolute bottom-6 right-6 z-20 text-right">
@@ -887,10 +934,10 @@ export default function SynapserStudioScroll() {
         >
           {sceneLocalPercent}%
         </p>
-        {scrollGlitch.flat.enabled ? (
+        {activeScrollGlitch?.flat.enabled ? (
           <p className="mt-2 text-[10px] uppercase tracking-widest text-[#f0ebe3]/35">Flat glitch</p>
         ) : null}
-        {scrollGlitch.flat.enabled ? (
+        {activeScrollGlitch?.flat.enabled ? (
           <p className="font-mono text-lg font-bold tabular-nums text-[#00d4ff]/80">
             {Math.round(flatGlitchUi * 100)}%
           </p>

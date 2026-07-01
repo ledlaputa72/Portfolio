@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SYNAPSER_SCENES, useSynapserModel } from "./SynapserModelContext";
+import { useSynapserModel } from "./SynapserModelContext";
 import SynapserColorPicker from "./SynapserColorPicker";
 import {
   SettingTip,
@@ -9,6 +9,7 @@ import {
   TipField,
   TipRangeRow,
   TipSection,
+  TipSegmentRow,
 } from "./SynapserSettingControls";
 import { SCENE_SETTING_TIPS } from "./synapser-setting-tips";
 import {
@@ -16,6 +17,8 @@ import {
   type SynapserCameraKeyframe,
   type SynapserLightConfig,
   type SynapserSceneSettings,
+  type SynapserTypographyAlignX,
+  type SynapserTypographyAlignY,
   type Vec3,
 } from "@/lib/synapser-scene-settings";
 
@@ -240,6 +243,7 @@ function LightEditor({
 export default function SynapserSceneSettingsPanel({ compact = false }: SynapserSceneSettingsPanelProps) {
   const {
     selectedScene,
+    sceneList,
     activeSceneSettings: s,
     settingsDirty,
     patchSceneSettings,
@@ -253,10 +257,11 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
     motion: false,
     camera: false,
     cameraAnim: false,
+    typography: !compact,
   });
 
   const patch = (next: Partial<SynapserSceneSettings>) => patchSceneSettings(selectedScene, next);
-  const sceneLabel = SYNAPSER_SCENES.find((sc) => sc.id === selectedScene)?.label ?? selectedScene;
+  const sceneLabel = sceneList.find((sc) => sc.id === selectedScene)?.label ?? selectedScene;
 
   const toggle = (key: keyof typeof open) => setOpen((prev) => ({ ...prev, [key]: !prev[key] }));
 
@@ -612,6 +617,40 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
             max={500}
             step={1}
             onChange={(far) => patch({ camera: { ...s.camera, far } })}
+          />
+        </TipSection>
+
+        <TipSection
+          title="타이틀 그룹 (Typography)"
+          tip={SCENE_SETTING_TIPS.sectionTypography}
+          open={open.typography}
+          onToggle={() => toggle("typography")}
+        >
+          <TipSegmentRow<SynapserTypographyAlignX>
+            label="좌우"
+            tip={SCENE_SETTING_TIPS.typographyAlignX}
+            value={s.typography?.alignX ?? "left"}
+            options={[
+              { id: "left", label: "좌" },
+              { id: "center", label: "중" },
+              { id: "right", label: "우" },
+            ]}
+            onChange={(alignX) =>
+              patch({ typography: { ...(s.typography ?? { alignX: "left", alignY: "bottom" }), alignX } })
+            }
+          />
+          <TipSegmentRow<SynapserTypographyAlignY>
+            label="상중하"
+            tip={SCENE_SETTING_TIPS.typographyAlignY}
+            value={s.typography?.alignY ?? "bottom"}
+            options={[
+              { id: "top", label: "상" },
+              { id: "middle", label: "중" },
+              { id: "bottom", label: "하" },
+            ]}
+            onChange={(alignY) =>
+              patch({ typography: { ...(s.typography ?? { alignX: "left", alignY: "bottom" }), alignY } })
+            }
           />
         </TipSection>
 

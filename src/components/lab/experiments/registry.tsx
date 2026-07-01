@@ -50,7 +50,6 @@ import IrisKSample from "./IrisKSample";
 import ProduxSplitText from "./ProduxSplitText";
 import ProduxSample from "./ProduxSample";
 import SynapserStudioDemo from "./SynapserStudioDemo";
-import SynapserStudioScroll from "./SynapserStudioScroll";
 import SynapserStudioSample from "./SynapserStudioSample";
 import KvsStudioBreak from "./KvsStudioBreak";
 import KvsStudioSample from "./KvsStudioSample";

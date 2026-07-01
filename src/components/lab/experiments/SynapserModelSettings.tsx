@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { SYNAPSER_SCENES, useSynapserModel } from "./SynapserModelContext";
+import { useSynapserModel } from "./SynapserModelContext";
 import { SettingTip, TipField, TipRangeRow } from "./SynapserSettingControls";
 import { MODEL_SETTING_TIPS } from "./synapser-setting-tips";
 import { SYNAPSER_MODEL_ACCEPT } from "@/lib/synapser-model-store";
@@ -20,6 +20,7 @@ export default function SynapserModelSettings({
     selectedScene,
     setSelectedScene,
     activeScene,
+    sceneList,
     scenes,
     loading,
     loadFile,
@@ -30,8 +31,8 @@ export default function SynapserModelSettings({
 
   const { mode, meta, pendingBuffer, scale } = activeScene;
   const canSave = mode === "custom" && (pendingBuffer !== null || meta !== null);
-  const sceneInfo = SYNAPSER_SCENES.find((s) => s.id === selectedScene)!;
-  const customCount = SYNAPSER_SCENES.filter((s) => scenes[s.id].mode === "custom").length;
+  const sceneInfo = sceneList.find((s) => s.id === selectedScene) ?? sceneList[0];
+  const customCount = sceneList.filter((s) => scenes[s.id]?.mode === "custom").length;
 
   return (
     <div
@@ -52,7 +53,7 @@ export default function SynapserModelSettings({
             onChange={(e) => setSelectedScene(e.target.value as typeof selectedScene)}
             className="mt-1.5 w-full max-w-xs rounded-lg border border-[#2a2520] bg-[#0f0c0a] px-3 py-2 text-sm text-[#f0ebe3] outline-none transition-colors focus:border-[#c9a66b]/50"
           >
-            {SYNAPSER_SCENES.map((scene) => {
+            {sceneList.map((scene) => {
               const hasCustom = scenes[scene.id].mode === "custom";
               return (
                 <option key={scene.id} value={scene.id}>
@@ -76,7 +77,7 @@ export default function SynapserModelSettings({
           ) : null}
           {customCount > 0 ? (
             <p className="mt-1 text-[11px] text-[#f0ebe3]/35">
-              커스텀 모델 {customCount}/{SYNAPSER_SCENES.length}개 씬에 적용됨
+              커스텀 모델 {customCount}/{sceneList.length}개 씬에 적용됨
             </p>
           ) : null}
         </div>

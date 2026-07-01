@@ -36,17 +36,24 @@ export type SynapserGlitchScreenLayer = SynapserGlitchLayerSettings & {
   particleDensity: number;
 };
 
+export type SynapserGlitchFlatLayer = SynapserGlitchLayerSettings & {
+  /** Title glitch response speed: 0 = slow, 1 = fast. */
+  effectSpeed: number;
+};
+
 export type SynapserScrollGlitchSettings = {
   preset: SynapserGlitchPresetId;
   enabled: boolean;
   masterIntensity: number;
   decayRate: number;
+  /** Visual follow speed toward burst target (Glitch&Grit uGlitch lerp ≈ 0.4). */
+  displayLerp: number;
   burstOnSceneChange: boolean;
   burstAtSceneStart: boolean;
   sceneStartWindow: number;
   scrollSensitivity: number;
   object: SynapserGlitchObjectLayer;
-  flat: SynapserGlitchLayerSettings;
+  flat: SynapserGlitchFlatLayer;
   screen: SynapserGlitchScreenLayer;
 };
 
@@ -75,11 +82,12 @@ const DEFAULT_OBJECT: SynapserGlitchObjectLayer = {
   colorTint: 0.72,
 };
 
-const DEFAULT_FLAT: SynapserGlitchLayerSettings = {
+const DEFAULT_FLAT: SynapserGlitchFlatLayer = {
   ...DEFAULT_LAYER,
   intensity: 1,
   sliceStrength: 0.95,
   rgbShift: 1.1,
+  effectSpeed: 0.82,
 };
 
 const DEFAULT_SCREEN: SynapserGlitchScreenLayer = {
@@ -96,7 +104,7 @@ export type SynapserScrollGlitchSettingsPatch = Partial<
   Omit<SynapserScrollGlitchSettings, "object" | "flat" | "screen">
 > & {
   object?: Partial<SynapserGlitchObjectLayer>;
-  flat?: Partial<SynapserGlitchLayerSettings>;
+  flat?: Partial<SynapserGlitchFlatLayer>;
   screen?: Partial<SynapserGlitchScreenLayer>;
 };
 
@@ -109,7 +117,8 @@ function buildPreset(
     preset: id,
     enabled: true,
     masterIntensity: 1,
-    decayRate: 0.88,
+    decayRate: 0.9,
+    displayLerp: 0.4,
     burstOnSceneChange: true,
     burstAtSceneStart: true,
     sceneStartWindow: 0.1,
@@ -172,8 +181,13 @@ export const DEFAULT_SYNAPSER_SCROLL_GLITCH: SynapserScrollGlitchSettings = {
   ...SYNAPSER_GLITCH_PRESETS.cinematic,
 };
 
-const STORAGE_KEY = "synapser-scroll-glitch-v5";
-const LEGACY_STORAGE_KEYS = ["synapser-scroll-glitch-v4", "synapser-scroll-glitch-v3"];
+const STORAGE_KEY = "synapser-scroll-glitch-v7";
+const LEGACY_STORAGE_KEYS = [
+  "synapser-scroll-glitch-v6",
+  "synapser-scroll-glitch-v5",
+  "synapser-scroll-glitch-v4",
+  "synapser-scroll-glitch-v3",
+];
 
 type LegacyFlat = {
   intensity?: number;
@@ -211,9 +225,10 @@ function migrateLegacySettings(parsed: LegacyFlat & Partial<SynapserScrollGlitch
     ...DEFAULT_SYNAPSER_SCROLL_GLITCH,
     preset: parsed.preset ?? "cinematic",
     enabled: parsed.enabled ?? true,
-    masterIntensity: parsed.masterIntensity ?? parsed.intensity ?? 1,
-    decayRate: parsed.decayRate ?? 0.88,
-    burstOnSceneChange: parsed.burstOnSceneChange ?? true,
+      masterIntensity: parsed.masterIntensity ?? parsed.intensity ?? 1,
+      decayRate: parsed.decayRate ?? 0.9,
+      displayLerp: parsed.displayLerp ?? 0.4,
+      burstOnSceneChange: parsed.burstOnSceneChange ?? true,
     burstAtSceneStart: parsed.burstAtSceneStart ?? true,
     sceneStartWindow: parsed.sceneStartWindow ?? 0.1,
     scrollSensitivity: parsed.scrollSensitivity ?? 1.6,
@@ -229,6 +244,7 @@ function migrateLegacySettings(parsed: LegacyFlat & Partial<SynapserScrollGlitch
       ...shared,
       enabled: parsed.typographyGlitch ?? parsed.flat?.enabled ?? true,
       intensity: parsed.flat?.intensity ?? 1,
+      effectSpeed: parsed.flat?.effectSpeed ?? DEFAULT_FLAT.effectSpeed,
     },
     screen: {
       ...DEFAULT_SCREEN,
@@ -319,12 +335,19 @@ export function mergeScrollGlitchPatch(
   prev: SynapserScrollGlitchSettings,
   patch: SynapserScrollGlitchSettingsPatch,
 ): SynapserScrollGlitchSettings {
-  return {
+  const base = {
+    ...DEFAULT_SYNAPSER_SCROLL_GLITCH,
     ...prev,
+    object: { ...DEFAULT_SYNAPSER_SCROLL_GLITCH.object, ...prev.object },
+    flat: { ...DEFAULT_SYNAPSER_SCROLL_GLITCH.flat, ...prev.flat },
+    screen: { ...DEFAULT_SYNAPSER_SCROLL_GLITCH.screen, ...prev.screen },
+  };
+  return {
+    ...base,
     ...patch,
-    object: patch.object ? { ...prev.object, ...patch.object } : prev.object,
-    flat: patch.flat ? { ...prev.flat, ...patch.flat } : prev.flat,
-    screen: patch.screen ? { ...prev.screen, ...patch.screen } : prev.screen,
+    object: { ...base.object, ...patch.object },
+    flat: { ...base.flat, ...patch.flat },
+    screen: { ...base.screen, ...patch.screen },
   };
 }
 
@@ -334,21 +357,26 @@ export function applySynapserScrollGlitch({
   prevProgress,
   glitchRef,
   settings,
+  sceneCount = 3,
 }: {
   progress: number;
   prevSceneIndex: number;
   prevProgress: number;
   glitchRef: { current: number };
   settings: SynapserScrollGlitchSettings;
+  sceneCount?: number;
 }): number {
+  if (!glitchRef) {
+    return getActiveSceneIndex(progress, sceneCount);
+  }
   if (!settings.enabled) {
     glitchRef.current = 0;
-    return getActiveSceneIndex(progress);
+    return getActiveSceneIndex(progress, sceneCount);
   }
 
   let glitch = glitchRef.current;
-  const sceneIndex = getActiveSceneIndex(progress);
-  const local = getSceneLocalProgress(progress, sceneIndex);
+  const sceneIndex = getActiveSceneIndex(progress, sceneCount);
+  const local = getSceneLocalProgress(progress, sceneIndex, sceneCount);
 
   if (settings.burstOnSceneChange && sceneIndex !== prevSceneIndex) {
     glitch = 1;
@@ -371,15 +399,46 @@ export function applySynapserScrollGlitch({
 }
 
 export function getSynapserGlitchDisplay(
-  glitchRef: { current: number },
+  glitchRef: { current: number } | null | undefined,
   settings: SynapserScrollGlitchSettings,
 ): number {
-  if (!settings.enabled) return 0;
+  if (!settings.enabled || !glitchRef) return 0;
   return Math.max(0, Math.min(1, glitchRef.current * settings.masterIntensity));
 }
 
+export function getSynapserLayerDisplay(
+  masterDisplay: number,
+  settings: SynapserScrollGlitchSettings,
+  layer: "object" | "flat" | "screen",
+): number {
+  const zone = settings[layer];
+  if (!settings.enabled || !zone.enabled) return 0;
+  return masterDisplay * zone.intensity;
+}
+
+export function getSynapserObjectGlitchDisplayFromLevel(
+  masterDisplay: number,
+  settings: SynapserScrollGlitchSettings,
+): number {
+  return getSynapserLayerDisplay(masterDisplay, settings, "object");
+}
+
+export function getSynapserFlatGlitchDisplayFromLevel(
+  masterDisplay: number,
+  settings: SynapserScrollGlitchSettings,
+): number {
+  return getSynapserLayerDisplay(masterDisplay, settings, "flat");
+}
+
+export function getSynapserScreenGlitchDisplayFromLevel(
+  masterDisplay: number,
+  settings: SynapserScrollGlitchSettings,
+): number {
+  return getSynapserLayerDisplay(masterDisplay, settings, "screen");
+}
+
 export function getSynapserLayerGlitchDisplay(
-  glitchRef: { current: number },
+  glitchRef: { current: number } | null | undefined,
   settings: SynapserScrollGlitchSettings,
   layer: "object" | "flat" | "screen",
 ): number {
@@ -393,6 +452,17 @@ export function getSynapserObjectGlitchDisplay(
   settings: SynapserScrollGlitchSettings,
 ): number {
   return getSynapserLayerGlitchDisplay(glitchRef, settings, "object");
+}
+
+export function getSynapserFlatGlitchTransitionMs(flat: SynapserGlitchFlatLayer): number {
+  const speed = Math.max(0, Math.min(1, flat.effectSpeed));
+  return Math.round(450 - speed * 410);
+}
+
+/** @deprecated use displayLerp from scroll glitch settings */
+export function getSynapserFlatGlitchSmoothing(flat: SynapserGlitchFlatLayer): number {
+  const speed = Math.max(0, Math.min(1, flat.effectSpeed));
+  return 0.04 + speed * 0.5;
 }
 
 export function getSynapserFlatGlitchDisplay(
@@ -417,6 +487,21 @@ export function getSynapserObjectGlitchBaseline(settings: SynapserScrollGlitchSe
 }
 
 /** Full-screen rectangular particle noise strength (burst + ambient + object idle). */
+export function getSynapserParticleNoiseFromDisplay(
+  masterDisplay: number,
+  settings: SynapserScrollGlitchSettings,
+): number {
+  const layer = settings.screen;
+  if (!layer.enabled) return 0;
+
+  const burst = settings.enabled ? masterDisplay : 0;
+  const ambient = layer.intensity * layer.particleDensity * 0.22;
+  const objectDust = getSynapserObjectGlitchBaseline(settings) * layer.particleDensity * 0.5;
+  const strength = Math.max(burst, ambient, objectDust);
+
+  return Math.min(1, strength * layer.particleDensity * (0.4 + layer.gritOpacity * 0.85));
+}
+
 export function getSynapserParticleNoiseDisplay(
   glitchRef: { current: number },
   settings: SynapserScrollGlitchSettings,

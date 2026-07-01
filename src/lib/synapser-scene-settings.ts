@@ -22,6 +22,14 @@ export type SynapserCameraKeyframe = {
   fov: number;
 };
 
+export type SynapserTypographyAlignX = "left" | "center" | "right";
+export type SynapserTypographyAlignY = "top" | "middle" | "bottom";
+
+export type SynapserTypographySettings = {
+  alignX: SynapserTypographyAlignX;
+  alignY: SynapserTypographyAlignY;
+};
+
 export type SynapserSceneSettings = {
   lighting: {
     ambientIntensity: number;
@@ -88,6 +96,7 @@ export type SynapserSceneSettings = {
     zoomInEnd: number;
     holdEnd: number;
   };
+  typography: SynapserTypographySettings;
 };
 
 export type SynapserSceneSettingsMap = Record<SynapserSceneId, SynapserSceneSettings>;
@@ -116,7 +125,12 @@ function cloneLights(): SynapserLightConfig[] {
   return BASE_LIGHTS.map((l) => ({ ...l, position: [...l.position] as Vec3 }));
 }
 
-function sceneDefaults(
+const DEFAULT_TYPOGRAPHY: SynapserTypographySettings = {
+  alignX: "left",
+  alignY: "bottom",
+};
+
+export function sceneDefaults(
   overrides: {
     lighting?: Partial<SynapserSceneSettings["lighting"]>;
     background?: Partial<SynapserSceneSettings["background"]>;
@@ -124,6 +138,7 @@ function sceneDefaults(
     camera?: Partial<SynapserSceneSettings["camera"]>;
     cameraAnimation?: Partial<SynapserSceneSettings["cameraAnimation"]>;
     cinematicScroll?: Partial<SynapserSceneSettings["cinematicScroll"]>;
+    typography?: Partial<SynapserTypographySettings>;
   } = {},
 ): SynapserSceneSettings {
   const base: SynapserSceneSettings = {
@@ -188,6 +203,7 @@ function sceneDefaults(
       zoomInEnd: 0.38,
       holdEnd: 0.62,
     },
+    typography: { ...DEFAULT_TYPOGRAPHY },
   };
 
   return {
@@ -205,6 +221,7 @@ function sceneDefaults(
       ...base.cinematicScroll,
       ...overrides.cinematicScroll,
     },
+    typography: { ...base.typography, ...overrides.typography },
   };
 }
 
@@ -251,7 +268,7 @@ function normalizeObjectMotion(
   };
 }
 
-function mergeSceneSettings(partial: Partial<SynapserSceneSettings>): SynapserSceneSettings {
+export function mergeSceneSettings(partial: Partial<SynapserSceneSettings>): SynapserSceneSettings {
   const defaults = sceneDefaults();
   return {
     lighting: { ...defaults.lighting, ...partial.lighting, lights: partial.lighting?.lights ?? defaults.lighting.lights },
@@ -264,6 +281,54 @@ function mergeSceneSettings(partial: Partial<SynapserSceneSettings>): SynapserSc
       keyframes: partial.cameraAnimation?.keyframes ?? defaults.cameraAnimation.keyframes,
     },
     cinematicScroll: { ...defaults.cinematicScroll, ...partial.cinematicScroll },
+    typography: normalizeSynapserTypography(partial.typography),
+  };
+}
+
+export function normalizeSynapserTypography(
+  typography?: Partial<SynapserTypographySettings> | null,
+): SynapserTypographySettings {
+  return { ...DEFAULT_TYPOGRAPHY, ...typography };
+}
+
+export function getSynapserTypographyLayoutClasses(
+  typography?: Partial<SynapserTypographySettings> | null,
+): { container: string; body: string; transform?: string } {
+  const t = normalizeSynapserTypography(typography);
+  const horizontal =
+    t.alignX === "left"
+      ? "left-6 sm:left-14 right-auto"
+      : t.alignX === "right"
+        ? "right-6 sm:right-14 left-auto"
+        : "left-1/2 right-auto";
+
+  const vertical =
+    t.alignY === "top"
+      ? "top-20 sm:top-24 bottom-auto"
+      : t.alignY === "middle"
+        ? "top-1/2 bottom-auto"
+        : "bottom-28 top-auto";
+
+  const text =
+    t.alignX === "left"
+      ? "text-left items-start"
+      : t.alignX === "right"
+        ? "text-right items-end"
+        : "text-center items-center";
+
+  const transforms: string[] = [];
+  if (t.alignX === "center") transforms.push("translateX(-50%)");
+  if (t.alignY === "middle") transforms.push("translateY(-50%)");
+
+  return {
+    container: `pointer-events-none absolute z-10 flex flex-col px-8 sm:px-14 ${horizontal} ${vertical} ${text}`,
+    body:
+      t.alignX === "center"
+        ? "mx-auto max-w-md"
+        : t.alignX === "right"
+          ? "ml-auto max-w-md"
+          : "max-w-md",
+    transform: transforms.length > 0 ? transforms.join(" ") : undefined,
   };
 }
 
@@ -384,30 +449,36 @@ export function getCinematicCamera(
   };
 }
 
-export function getSceneLocalProgress(globalP: number, sceneIndex: number): number {
-  const segment = 1 / 3;
+export function getSceneLocalProgress(
+  globalP: number,
+  sceneIndex: number,
+  sceneCount = 3,
+): number {
+  if (sceneCount <= 0) return 0;
+  const segment = 1 / sceneCount;
   const start = sceneIndex * segment;
   const local = (globalP - start) / segment;
   return Math.max(0, Math.min(1, local));
 }
 
-export function getActiveSceneIndex(globalP: number): number {
-  return Math.min(2, Math.max(0, Math.floor(globalP * 3)));
+export function getActiveSceneIndex(globalP: number, sceneCount = 3): number {
+  if (sceneCount <= 0) return 0;
+  return Math.min(sceneCount - 1, Math.max(0, Math.floor(globalP * sceneCount)));
 }
 
 const CROSSFADE = 0.08;
 
 export function getCinematicSceneVisibilities(
   globalP: number,
-): Record<SynapserSceneId, number> {
-  const segment = 1 / 3;
-  const result: Record<SynapserSceneId, number> = {
-    manifesto: 0,
-    archive: 0,
-    journey: 0,
-  };
+  sceneIds: string[],
+): Record<string, number> {
+  const sceneCount = sceneIds.length;
+  if (sceneCount === 0) return {};
+  const segment = 1 / sceneCount;
+  const result: Record<string, number> = {};
+  for (const id of sceneIds) result[id] = 0;
 
-  SCENE_IDS.forEach((id, i) => {
+  sceneIds.forEach((id, i) => {
     const start = i * segment;
     const raw = (globalP - start) / segment;
 
@@ -417,12 +488,16 @@ export function getCinematicSceneVisibilities(
     }
 
     if (raw <= 0) {
-      result[id] = globalP > start ? smoothstep(Math.min(1, (globalP - start) / (segment * CROSSFADE))) : 0;
+      result[id] =
+        globalP > start ? smoothstep(Math.min(1, (globalP - start) / (segment * CROSSFADE))) : 0;
       return;
     }
 
     if (raw >= 1) {
-      result[id] = globalP < start + segment ? smoothstep(Math.min(1, (start + segment - globalP) / (segment * CROSSFADE))) : 0;
+      result[id] =
+        globalP < start + segment
+          ? smoothstep(Math.min(1, (start + segment - globalP) / (segment * CROSSFADE)))
+          : 0;
       return;
     }
 
@@ -435,9 +510,19 @@ export function getCinematicSceneVisibilities(
   return result;
 }
 
+/** @deprecated use getCinematicSceneVisibilities(globalP, sceneIds) */
+export function getCinematicSceneVisibilitiesLegacy(
+  globalP: number,
+): Record<SynapserSceneId, number> {
+  return getCinematicSceneVisibilities(globalP, SCENE_IDS) as Record<SynapserSceneId, number>;
+}
+
 /** @deprecated use getCinematicSceneVisibilities for scroll-driven scenes */
-export function getSceneVisibilities(globalP: number): Record<SynapserSceneId, number> {
-  return getCinematicSceneVisibilities(globalP);
+export function getSceneVisibilities(
+  globalP: number,
+  sceneIds: SynapserSceneId[] = SCENE_IDS,
+): Record<string, number> {
+  return getCinematicSceneVisibilities(globalP, sceneIds);
 }
 
 export const MAX_SCENE_LIGHTS = 3;

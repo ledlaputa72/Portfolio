@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { SynapserScrollGlitchSettings } from "@/lib/synapser-scroll-glitch";
-import { getSynapserParticleNoiseDisplay } from "@/lib/synapser-scroll-glitch";
+import { getSynapserParticleNoiseFromDisplay } from "@/lib/synapser-scroll-glitch";
 
 const vertexShader = /* glsl */ `
 varying vec2 vUv;
@@ -77,10 +77,10 @@ void main() {
 `;
 
 function ScreenParticlePlane({
-  glitchRef,
+  displayGlitchRef,
   settings,
 }: {
-  glitchRef: React.RefObject<number>;
+  displayGlitchRef: React.RefObject<number>;
   settings: SynapserScrollGlitchSettings;
 }) {
   const materialRef = useRef<THREE.ShaderMaterial>(null!);
@@ -98,7 +98,7 @@ function ScreenParticlePlane({
 
   useFrame(({ clock }) => {
     if (!materialRef.current) return;
-    const display = getSynapserParticleNoiseDisplay(glitchRef, settings);
+    const display = getSynapserParticleNoiseFromDisplay(displayGlitchRef.current, settings);
     materialRef.current.uniforms.uTime.value = clock.elapsedTime;
     materialRef.current.uniforms.uGlitch.value = display;
     materialRef.current.uniforms.uGrit.value = layer.gritOpacity;
@@ -125,13 +125,13 @@ function ScreenParticlePlane({
 }
 
 type SynapserScrollGlitchOverlayProps = {
-  glitchRef: React.RefObject<number>;
+  displayGlitchRef: React.RefObject<number>;
   particleNoiseUi: number;
   settings: SynapserScrollGlitchSettings;
 };
 
 export default function SynapserScrollGlitchOverlay({
-  glitchRef,
+  displayGlitchRef,
   particleNoiseUi,
   settings,
 }: SynapserScrollGlitchOverlayProps) {
@@ -149,7 +149,7 @@ export default function SynapserScrollGlitchOverlay({
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
       >
-        <ScreenParticlePlane glitchRef={glitchRef} settings={settings} />
+        <ScreenParticlePlane displayGlitchRef={displayGlitchRef} settings={settings} />
       </Canvas>
 
       {particleNoiseUi > 0.012 ? (
@@ -177,13 +177,13 @@ export function synapserGlitchTextStyle(
   flatGlitchUi: number,
   flat: SynapserScrollGlitchSettings["flat"],
 ) {
-  if (!flat.enabled || flatGlitchUi < 0.12) return undefined;
-  const glitchPx = Math.round(flatGlitchUi * 8 * flat.rgbShift);
+  if (!flat.enabled || flatGlitchUi < 0.05) return undefined;
+  const glitchPx = Math.round(flatGlitchUi * 6 * flat.rgbShift);
   return {
-    textShadow: `${glitchPx * 1.3}px 0 rgba(255,0,120,0.85), ${-glitchPx}px 0 rgba(0,220,255,0.8), 0 0 ${glitchPx * flat.scanlineOpacity}px rgba(255,255,255,0.25)`,
+    textShadow: `${glitchPx * 1.2}px 0 #ff0066, ${-glitchPx}px 0 #00d4ff, 0 ${glitchPx * 0.5}px #0a0a0a`,
     transform:
-      flatGlitchUi > 0.25
-        ? `translateX(${(flatGlitchUi - 0.25) * 12 * flat.sliceStrength}px)`
+      flatGlitchUi > 0.3
+        ? `translateX(${(flatGlitchUi - 0.3) * 8 * flat.sliceStrength}px)`
         : undefined,
   } as const;
 }

@@ -23,7 +23,8 @@ const TIPS = {
   preset: "미리 조정된 글리치 조합입니다. 슬라이더를 바꾸면 Custom으로 전환됩니다.",
   enabled: "스크롤·씬 전환 글리치 시스템 전체를 켜거나 끕니다.",
   masterIntensity: "버스트의 전체 세기입니다. 아래 3개 영역 강도에 공통으로 곱해집니다.",
-  decay: "글리치 버스트가 사라지는 속도입니다. 낮을수록 빨리 줄어듭니다.",
+  decay: "글리치 버스트가 사라지는 속도입니다. Glitch&Grit 기준 0.9 — 낮을수록 빨리 줄어듭니다.",
+  displayLerp: "버스트 목표값을 화면에 따라가는 속도입니다. Glitch&Grit uGlitch lerp 0.4 — 낮을수록 더 천천히·부드럽게 표현됩니다.",
   scrollSensitivity: "스크롤 속도에 따른 버스트 반응입니다.",
   burstOnSceneChange: "씬(Manifesto/Archive/Journey) 전환 시 버스트를 발생시킵니다.",
   burstAtSceneStart: "각 씬 구간 시작 구간에서 추가 버스트를 넣습니다.",
@@ -49,6 +50,7 @@ const TIPS = {
   colorTint: "프로시저럴 노이즈(0)와 액센트 팔레트(1) 사이 블렌드입니다.",
   objectSection: "토러스·GLB 등 3D 메시 실루엣·외곽을 따라 셰이더 글리치가 적용됩니다.",
   flatSection: "MANIFESTO 타이포, Scene Progress·HUD 등 화면 평면 UI 요소에 적용됩니다.",
+  flatEffectSpeed: "타이틀 글리치 CSS 전환 속도입니다. Glitch&Grit duration-75에 가깝게 0.82 기본값.",
   screenSection: "3D·UI 위에 깔리는 전체 화면 은은한 노이즈·그릿 레이어입니다.",
   save: "글리치·씬 설정을 브라우저에 저장합니다. 샘플 페이지에도 적용됩니다.",
   reset: "글리치 설정을 Cinematic 프리셋 기본값으로 되돌립니다.",
@@ -247,9 +249,18 @@ export default function SynapserScrollGlitchSettings() {
             tip={TIPS.decay}
             value={scrollGlitch.decayRate}
             min={0.8}
-            max={0.98}
+            max={0.96}
             step={0.01}
             onChange={(decayRate) => patch({ decayRate })}
+          />
+          <TipRangeRow
+            label="Display Lerp"
+            tip={TIPS.displayLerp}
+            value={scrollGlitch.displayLerp}
+            min={0.1}
+            max={0.8}
+            step={0.05}
+            onChange={(displayLerp) => patch({ displayLerp })}
           />
           <TipRangeRow
             label="Scroll Sens."
@@ -415,6 +426,19 @@ export default function SynapserScrollGlitchSettings() {
             sectionTip={TIPS.flatSection}
             layer={scrollGlitch.flat}
             onPatch={(next) => patch({ flat: { ...scrollGlitch.flat, ...next } })}
+            extra={
+              <TipRangeRow
+                label="Title Speed"
+                tip={TIPS.flatEffectSpeed}
+                value={scrollGlitch.flat.effectSpeed}
+                min={0}
+                max={1}
+                step={0.05}
+                onChange={(effectSpeed) =>
+                  patch({ flat: { ...scrollGlitch.flat, effectSpeed } })
+                }
+              />
+            }
           />
 
           <LayerControls
