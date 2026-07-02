@@ -89,7 +89,7 @@ type SynapserModelContextValue = {
     sceneId: SynapserSceneId,
     patch: Partial<SynapserSceneSettings> | ((prev: SynapserSceneSettings) => SynapserSceneSettings),
   ) => void;
-  saveSceneSettings: () => void;
+  saveSceneSettings: () => void | Promise<void>;
   resetSceneSettings: (sceneId?: SynapserSceneId) => void;
   patchScrollGlitch: (patch: Partial<SynapserScrollGlitchSettings>) => void;
   patchScrollExperience: (patch: Partial<SynapserScrollExperience>) => void;
@@ -301,15 +301,35 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const saveSceneSettings = useCallback(() => {
+  const saveSceneSettings = useCallback(async () => {
     if (loadingRef.current) return;
+
     setProjectState((current) => {
       writeSynapserProjectState(current);
       return current;
     });
+
+    const pendingUpdates: Partial<Record<SynapserSceneId, SceneModelState>> = {};
+    for (const sceneId of sceneOrder) {
+      const scene = scenes[sceneId];
+      if (!scene?.pendingBuffer || !scene.meta) continue;
+      const nextMeta = { ...scene.meta, savedAt: Date.now(), scale: scene.scale };
+      await writeSynapserSceneBlob(sceneId, scene.pendingBuffer, nextMeta);
+      pendingUpdates[sceneId] = { ...scene, meta: nextMeta, pendingBuffer: null };
+    }
+    if (Object.keys(pendingUpdates).length > 0) {
+      setScenes((prev) => {
+        const next = { ...prev };
+        for (const [sceneId, state] of Object.entries(pendingUpdates)) {
+          if (state) next[sceneId] = state;
+        }
+        return next;
+      });
+    }
+
     setSettingsDirty(false);
     settingsTouchedRef.current = false;
-  }, []);
+  }, [scenes, sceneOrder]);
 
   const patchScrollGlitch = useCallback(
     (patch: Partial<SynapserScrollGlitchSettings>) => {
