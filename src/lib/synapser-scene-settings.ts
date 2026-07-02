@@ -491,12 +491,22 @@ export function getCinematicCamera(
 ): { position: Vec3; lookAt: Vec3; fov: number } {
   const cfg = settings.cinematicScroll;
   const cam = settings.camera;
-  const dist = lerp(cfg.distanceFar, cfg.distanceNear, clamp01(zoomT));
   const lookAt: Vec3 = [cam.lookAt[0], cam.lookAt[1], cam.lookAt[2]];
-  const height = cam.position[1];
+  const base: Vec3 = [cam.position[0], cam.position[1], cam.position[2]];
+
+  const dir: Vec3 = [base[0] - lookAt[0], base[1] - lookAt[1], base[2] - lookAt[2]];
+  const baseLen = Math.hypot(dir[0], dir[1], dir[2]);
+  if (baseLen < 1e-6) {
+    return { position: base, lookAt, fov: cam.fov };
+  }
+
+  const ux = dir[0] / baseLen;
+  const uy = dir[1] / baseLen;
+  const uz = dir[2] / baseLen;
+  const rayDist = lerp(cfg.distanceFar, cfg.distanceNear, clamp01(zoomT));
 
   return {
-    position: [cam.position[0], height, dist],
+    position: [lookAt[0] + ux * rayDist, lookAt[1] + uy * rayDist, lookAt[2] + uz * rayDist],
     lookAt,
     fov: cam.fov,
   };

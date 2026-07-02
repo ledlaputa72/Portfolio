@@ -338,23 +338,24 @@ function AnimatedSceneContent({
     const autoRad = SYNAPSER_AUTO_ROTATE_MAX_RAD_PER_SEC * delta;
     let rawLocalP =
       sceneIndex >= 0 ? getSceneLocalProgress(rawProgressRef.current, sceneIndex, sceneCount) : 0;
+    const cinematicEnabled = cinematicScroll?.enabled === true;
     const scrollRotationActive =
-      cinematicScroll?.enabled === true && (cinematicScroll.scrollRotation?.revolutions ?? 0) > 0;
+      cinematicEnabled && (cinematicScroll.scrollRotation?.revolutions ?? 0) > 0;
     const scrollRotY = scrollRotationActive
       ? getCinematicScrollRotation(rawLocalP, cinematicScroll)
       : 0;
 
-    g.rotation.x += motion.autoRotateX * autoRad;
-    if (scrollRotationActive) {
-      g.rotation.y = scrollRotY + pointer.x * motion.pointerTiltY;
+    if (cinematicEnabled) {
+      g.rotation.set(0, scrollRotY, 0);
     } else {
+      g.rotation.x += motion.autoRotateX * autoRad;
       g.rotation.y += motion.autoRotateY * autoRad;
       g.rotation.y += pointer.x * motion.pointerTiltY;
+      g.rotation.z += motion.autoRotateZ * autoRad;
+      g.rotation.x += pointer.y * motion.pointerTiltX;
     }
-    g.rotation.z += motion.autoRotateZ * autoRad;
-    g.rotation.x += pointer.y * motion.pointerTiltX;
 
-    if (motion.floatEnabled && f && motion.floatSpeed > 0 && motion.floatIntensity > 0) {
+    if (!cinematicEnabled && motion.floatEnabled && f && motion.floatSpeed > 0 && motion.floatIntensity > 0) {
       floatPhase.current += delta * motion.floatSpeed * SYNAPSER_FLOAT_MAX_HZ * Math.PI * 2;
       f.position.y = Math.sin(floatPhase.current) * motion.floatIntensity * SYNAPSER_FLOAT_MAX_AMP;
       if (motion.rotationIntensity > 0) {
@@ -368,8 +369,10 @@ function AnimatedSceneContent({
       }
     } else if (f) {
       f.position.y = 0;
-      f.rotation.x = 0;
-      f.rotation.z = 0;
+      if (!cinematicEnabled) {
+        f.rotation.x = 0;
+        f.rotation.z = 0;
+      }
     }
   });
 
@@ -540,6 +543,9 @@ function ScrollWorld({
     let orbitDamp = 0;
     let orbitEdgePower = 0;
 
+    const activeSettings = activeId ? sceneSettings[activeId] : undefined;
+    const cinematicZoomOnly = activeSettings?.cinematicScroll.enabled === true;
+
     sceneOrder.forEach((id, index) => {
       const weight = vis[id] ?? 0;
       const settings = sceneSettings[id];
@@ -639,22 +645,24 @@ function ScrollWorld({
       delta,
     );
 
-    const orbited = applySynapserPointerOrbit(
-      posX,
-      posY,
-      posZ,
-      lookX,
-      lookY,
-      lookZ,
-      smoothedPointer.current.x,
-      smoothedPointer.current.y,
-      orbitYaw,
-      orbitPitch,
-      orbitEdgePower,
-    );
-    posX = orbited.x;
-    posY = orbited.y;
-    posZ = orbited.z;
+    if (!cinematicZoomOnly) {
+      const orbited = applySynapserPointerOrbit(
+        posX,
+        posY,
+        posZ,
+        lookX,
+        lookY,
+        lookZ,
+        smoothedPointer.current.x,
+        smoothedPointer.current.y,
+        orbitYaw,
+        orbitPitch,
+        orbitEdgePower,
+      );
+      posX = orbited.x;
+      posY = orbited.y;
+      posZ = orbited.z;
+    }
 
     if (meshScanFrame.current++ % 20 === 0) {
       const nextMeshes: THREE.Object3D[] = [];
@@ -698,11 +706,13 @@ function ScrollWorld({
     objectHoverRef.current.sceneId =
       nextBlend > 0.02 && hoveredScene ? hoveredScene : null;
 
-    const zoom = nextBlend * hoverZoomPull;
+    const zoom = cinematicZoomOnly ? 0 : nextBlend * hoverZoomPull;
     posX += (lookX - posX) * zoom;
     posY += (lookY - posY) * zoom;
     posZ += (lookZ - posZ) * zoom;
-    fov -= nextBlend * hoverZoomFovPull;
+    if (!cinematicZoomOnly) {
+      fov -= nextBlend * hoverZoomFovPull;
+    }
 
     camera.position.set(posX, posY, posZ);
 
