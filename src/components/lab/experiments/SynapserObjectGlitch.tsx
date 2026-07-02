@@ -10,7 +10,7 @@ import {
   getSynapserObjectGlitchDisplayFromLevel,
   parseSynapserHexColor,
 } from "@/lib/synapser-scroll-glitch";
-import { getCinematicSceneVisibilities, type SynapserSceneId } from "@/lib/synapser-scene-settings";
+import { getSynapserSceneVisibilities, type SynapserSceneId } from "@/lib/synapser-scene-settings";
 import type { SynapserObjectHoverState } from "./synapser-object-hover";
 import { useSynapserModel } from "./SynapserModelContext";
 
@@ -210,7 +210,7 @@ export default function SynapserMeshGlitchBinder({
   settings,
   objectHoverRef,
 }: SynapserMeshGlitchBinderProps) {
-  const { sceneOrder } = useSynapserModel();
+  const { sceneOrder, sceneSettings } = useSynapserModel();
   const rootRef = useRef<THREE.Group>(null);
   const shellsRef = useRef<Map<THREE.Mesh, GlitchShell>>(new Map());
   const scanFrame = useRef(0);
@@ -262,7 +262,8 @@ export default function SynapserMeshGlitchBinder({
   useFrame(({ clock }) => {
     if (scanFrame.current++ % 15 === 0) syncShells();
 
-    const vis = getCinematicSceneVisibilities(progressRef?.current ?? 0, sceneOrder)[sceneId] ?? 0;
+    const vis =
+      getSynapserSceneVisibilities(progressRef?.current ?? 0, sceneOrder, sceneSettings)[sceneId] ?? 0;
     const layer = settings.object ?? DEFAULT_SYNAPSER_SCROLL_GLITCH.object;
     const hoverState = objectHoverRef?.current;
     const hover = hoverState?.sceneId === sceneId ? hoverState.blend : 0;

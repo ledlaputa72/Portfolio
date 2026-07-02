@@ -475,6 +475,56 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
             step={0.01}
             onChange={(autoRotateZ) => patch({ objectMotion: { ...s.objectMotion, autoRotateZ } })}
           />
+          <TipRangeRow
+            label="Pointer Tilt X"
+            tip={SCENE_SETTING_TIPS.pointerTiltX}
+            labelWidth="w-28"
+            value={s.objectMotion.pointerTiltX}
+            min={0}
+            max={0.1}
+            step={0.001}
+            onChange={(pointerTiltX) => patch({ objectMotion: { ...s.objectMotion, pointerTiltX } })}
+          />
+          <TipRangeRow
+            label="Pointer Tilt Y"
+            tip={SCENE_SETTING_TIPS.pointerTiltY}
+            labelWidth="w-28"
+            value={s.objectMotion.pointerTiltY}
+            min={0}
+            max={0.1}
+            step={0.001}
+            onChange={(pointerTiltY) => patch({ objectMotion: { ...s.objectMotion, pointerTiltY } })}
+          />
+          <TipRangeRow
+            label="Hover Zoom"
+            tip={SCENE_SETTING_TIPS.hoverZoomPull}
+            labelWidth="w-28"
+            value={s.camera.hoverZoomPull}
+            min={0}
+            max={1}
+            step={0.02}
+            onChange={(hoverZoomPull) => patch({ camera: { ...s.camera, hoverZoomPull } })}
+          />
+          <TipRangeRow
+            label="Hover FOV"
+            tip={SCENE_SETTING_TIPS.hoverZoomFovPull}
+            labelWidth="w-28"
+            value={s.camera.hoverZoomFovPull}
+            min={0}
+            max={12}
+            step={0.25}
+            onChange={(hoverZoomFovPull) => patch({ camera: { ...s.camera, hoverZoomFovPull } })}
+          />
+          <TipRangeRow
+            label="Hover Damp"
+            tip={SCENE_SETTING_TIPS.hoverZoomDamp}
+            labelWidth="w-28"
+            value={s.camera.hoverZoomDamp}
+            min={1}
+            max={20}
+            step={0.5}
+            onChange={(hoverZoomDamp) => patch({ camera: { ...s.camera, hoverZoomDamp } })}
+          />
           <TipField label="Group Offset" tip={SCENE_SETTING_TIPS.groupOffset}>
             <Vec3Input
               value={s.objectMotion.groupOffset}
@@ -768,46 +818,6 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
             max={1.2}
             step={0.02}
             onChange={(orbitEdgePower) => patch({ camera: { ...s.camera, orbitEdgePower } })}
-          />
-          <TipRangeRow
-            label="Hover Zoom"
-            tip={SCENE_SETTING_TIPS.hoverZoomPull}
-            labelWidth="w-28"
-            value={s.camera.hoverZoomPull}
-            min={0}
-            max={1}
-            step={0.02}
-            onChange={(hoverZoomPull) => patch({ camera: { ...s.camera, hoverZoomPull } })}
-          />
-          <TipRangeRow
-            label="Hover FOV"
-            tip={SCENE_SETTING_TIPS.hoverZoomFovPull}
-            labelWidth="w-28"
-            value={s.camera.hoverZoomFovPull}
-            min={0}
-            max={12}
-            step={0.25}
-            onChange={(hoverZoomFovPull) => patch({ camera: { ...s.camera, hoverZoomFovPull } })}
-          />
-          <TipRangeRow
-            label="Hover Damp"
-            tip={SCENE_SETTING_TIPS.hoverZoomDamp}
-            labelWidth="w-28"
-            value={s.camera.hoverZoomDamp}
-            min={1}
-            max={20}
-            step={0.5}
-            onChange={(hoverZoomDamp) => patch({ camera: { ...s.camera, hoverZoomDamp } })}
-          />
-          <TipRangeRow
-            label="Lerp"
-            tip={SCENE_SETTING_TIPS.lerpSpeed}
-            labelWidth="w-28"
-            value={s.camera.lerpSpeed}
-            min={0.01}
-            max={0.3}
-            step={0.01}
-            onChange={(lerpSpeed) => patch({ camera: { ...s.camera, lerpSpeed } })}
           />
           <TipRangeRow
             label="Near"

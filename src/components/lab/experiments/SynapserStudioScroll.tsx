@@ -352,25 +352,26 @@ function AnimatedSceneContent({
     );
 
     const autoRad = SYNAPSER_AUTO_ROTATE_MAX_RAD_PER_SEC * delta;
-    let rawLocalP =
+    const rawLocalP =
       sceneIndex >= 0 ? getSceneLocalProgress(rawProgressRef.current, sceneIndex, sceneCount) : 0;
     const scrollRotationActive =
-      cinematicEnabled && (cinematicScroll.scrollRotation?.revolutions ?? 0) > 0;
+      cinematicEnabled && (cinematicScroll?.scrollRotation?.revolutions ?? 0) > 0;
     const scrollRotY = scrollRotationActive
       ? getCinematicScrollRotation(rawLocalP, cinematicScroll)
       : 0;
 
-    if (cinematicEnabled) {
-      g.rotation.set(0, scrollRotY, 0);
+    g.rotation.x += motion.autoRotateX * autoRad;
+    g.rotation.z += motion.autoRotateZ * autoRad;
+    g.rotation.x += pointer.y * motion.pointerTiltX;
+
+    if (scrollRotationActive) {
+      g.rotation.y = scrollRotY + pointer.x * motion.pointerTiltY;
     } else {
-      g.rotation.x += motion.autoRotateX * autoRad;
       g.rotation.y += motion.autoRotateY * autoRad;
       g.rotation.y += pointer.x * motion.pointerTiltY;
-      g.rotation.z += motion.autoRotateZ * autoRad;
-      g.rotation.x += pointer.y * motion.pointerTiltX;
     }
 
-    if (!cinematicEnabled && motion.floatEnabled && f && motion.floatSpeed > 0 && motion.floatIntensity > 0) {
+    if (motion.floatEnabled && f && motion.floatSpeed > 0 && motion.floatIntensity > 0) {
       floatPhase.current += delta * motion.floatSpeed * SYNAPSER_FLOAT_MAX_HZ * Math.PI * 2;
       f.position.y = Math.sin(floatPhase.current) * motion.floatIntensity * SYNAPSER_FLOAT_MAX_AMP;
       if (motion.rotationIntensity > 0) {
@@ -384,10 +385,8 @@ function AnimatedSceneContent({
       }
     } else if (f) {
       f.position.y = 0;
-      if (!cinematicEnabled) {
-        f.rotation.x = 0;
-        f.rotation.z = 0;
-      }
+      f.rotation.x = 0;
+      f.rotation.z = 0;
     }
   });
 
@@ -626,6 +625,50 @@ function ScrollWorld({
     const activeSettings = activeId ? sceneSettings[activeId] : undefined;
     const cinematicZoomOnly = activeSettings?.cinematicScroll.enabled === true;
 
+    if (meshScanFrame.current++ % 20 === 0) {
+      const nextMeshes: THREE.Object3D[] = [];
+      sceneOrder.forEach((id) => {
+        if ((vis[id] ?? 0) < 0.05) return;
+        const groupRef = getGroupRef(id);
+        if (!groupRef.current) return;
+        groupRef.current.traverse((obj) => {
+          if (!(obj instanceof THREE.Mesh)) return;
+          if (obj.userData.synapserGlitchShell || obj.userData.synapserFloor) return;
+          nextMeshes.push(obj);
+        });
+      });
+      hoverMeshes.current = nextMeshes;
+    }
+
+    let hoveredScene: SynapserSceneId | null = null;
+    if (hoverMeshes.current.length > 0) {
+      raycaster.current.setFromCamera(pointer, camera);
+      const hits = raycaster.current.intersectObjects(hoverMeshes.current, false);
+      if (hits.length > 0) {
+        let node: THREE.Object3D | null = hits[0].object;
+        while (node) {
+          if (typeof node.userData.synapserSceneId === "string") {
+            hoveredScene = node.userData.synapserSceneId;
+            break;
+          }
+          node = node.parent;
+        }
+      }
+    }
+
+    const hoverCam = activeSettings?.camera;
+    const activeHoverDamp = hoverCam?.hoverZoomDamp ?? 7;
+    const hoverTarget = hoveredScene ? 1 : 0;
+    const hoverBlend = THREE.MathUtils.damp(
+      objectHoverRef.current.blend,
+      hoverTarget,
+      activeHoverDamp,
+      delta,
+    );
+    objectHoverRef.current.blend = hoverBlend;
+    objectHoverRef.current.sceneId =
+      hoverBlend > 0.02 && hoveredScene ? hoveredScene : null;
+
     if (cinematicZoomOnly && activeSettings && activeId) {
       const localP = getSceneLocalProgress(rawP, activeIdx, sceneCount);
       const cinematic = normalizeCinematicScroll(activeSettings.cinematicScroll);
@@ -634,13 +677,20 @@ function ScrollWorld({
 
       cameraEye.current.set(sample.position[0], sample.position[1], sample.position[2]);
       cameraForward.current.set(sample.forward[0], sample.forward[1], sample.forward[2]);
-      lookAtTarget.current.copy(cameraEye.current).add(cameraForward.current);
-      camera.position.copy(cameraEye.current);
+
+      const dollySpan = Math.max(0, cinematic.distanceFar - cinematic.distanceNear);
+      const pull = hoverBlend * (hoverCam?.hoverZoomPull ?? 0) * dollySpan;
+      const px = sample.position[0] - sample.forward[0] * pull;
+      const py = sample.position[1] - sample.forward[1] * pull;
+      const pz = sample.position[2] - sample.forward[2] * pull;
+
+      lookAtTarget.current.set(px + sample.forward[0], py + sample.forward[1], pz + sample.forward[2]);
+      camera.position.set(px, py, pz);
       camera.up.set(0, 1, 0);
       camera.lookAt(lookAtTarget.current);
 
       const persp = camera as PerspectiveCamera;
-      persp.fov = sample.fov;
+      persp.fov = sample.fov - hoverBlend * (hoverCam?.hoverZoomFovPull ?? 0);
       persp.near = activeSettings.camera.near;
       persp.far = activeSettings.camera.far;
       persp.updateProjectionMatrix();
@@ -761,55 +811,11 @@ function ScrollWorld({
       posZ = orbited.z;
     }
 
-    if (meshScanFrame.current++ % 20 === 0) {
-      const nextMeshes: THREE.Object3D[] = [];
-      sceneOrder.forEach((id) => {
-        if ((vis[id] ?? 0) < 0.05) return;
-        const groupRef = getGroupRef(id);
-        if (!groupRef.current) return;
-        groupRef.current.traverse((obj) => {
-          if (!(obj instanceof THREE.Mesh)) return;
-          if (obj.userData.synapserGlitchShell || obj.userData.synapserFloor) return;
-          nextMeshes.push(obj);
-        });
-      });
-      hoverMeshes.current = nextMeshes;
-    }
-
-    let hoveredScene: SynapserSceneId | null = null;
-    if (hoverMeshes.current.length > 0) {
-      raycaster.current.setFromCamera(pointer, camera);
-      const hits = raycaster.current.intersectObjects(hoverMeshes.current, false);
-      if (hits.length > 0) {
-        let node: THREE.Object3D | null = hits[0].object;
-        while (node) {
-          if (typeof node.userData.synapserSceneId === "string") {
-            hoveredScene = node.userData.synapserSceneId;
-            break;
-          }
-          node = node.parent;
-        }
-      }
-    }
-
-    const hoverTarget = hoveredScene ? 1 : 0;
-    const nextBlend = THREE.MathUtils.damp(
-      objectHoverRef.current.blend,
-      hoverTarget,
-      hoverZoomDamp,
-      delta,
-    );
-    objectHoverRef.current.blend = nextBlend;
-    objectHoverRef.current.sceneId =
-      nextBlend > 0.02 && hoveredScene ? hoveredScene : null;
-
-    const zoom = cinematicZoomOnly ? 0 : nextBlend * hoverZoomPull;
+    const zoom = hoverBlend * hoverZoomPull;
     posX += (lookX - posX) * zoom;
     posY += (lookY - posY) * zoom;
     posZ += (lookZ - posZ) * zoom;
-    if (!cinematicZoomOnly) {
-      fov -= nextBlend * hoverZoomFovPull;
-    }
+    fov -= hoverBlend * hoverZoomFovPull;
 
     camera.position.set(posX, posY, posZ);
 
