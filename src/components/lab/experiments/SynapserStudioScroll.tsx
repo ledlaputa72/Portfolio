@@ -37,7 +37,7 @@ import type { SynapserSceneDefinition, SynapserProceduralType } from "@/lib/syna
 import {
   getActiveSceneIndex,
   getCinematicCamera,
-  getCinematicSceneVisibilities,
+  getSynapserSceneVisibilities,
   getSceneLocalProgress,
   getSynapserTypographyLayoutClasses,
   normalizeSynapserTypography,
@@ -227,17 +227,20 @@ function SceneLights({
   lighting,
   progressRef,
   sceneOrder,
+  sceneSettings,
 }: {
   sceneId: SynapserSceneId;
   lighting: SynapserSceneSettings["lighting"];
   progressRef: React.RefObject<number>;
   sceneOrder: SynapserSceneId[];
+  sceneSettings: Record<SynapserSceneId, SynapserSceneSettings>;
 }) {
   const ambientRef = useRef<THREE.AmbientLight>(null);
   const lightRefs = useRef<(THREE.Light | null)[]>([]);
 
   useFrame(() => {
-    const visibility = getCinematicSceneVisibilities(progressRef.current, sceneOrder)[sceneId] ?? 0;
+    const visibility =
+      getSynapserSceneVisibilities(progressRef.current, sceneOrder, sceneSettings)[sceneId] ?? 0;
     if (ambientRef.current) {
       ambientRef.current.intensity = lighting.ambientIntensity * visibility;
       ambientRef.current.visible = visibility > 0.001;
@@ -321,10 +324,13 @@ function AnimatedSceneContent({
     if (!g) return;
 
     const persp = state.camera as PerspectiveCamera;
-    const dist = state.camera.position.distanceTo(lookAtCenter.current);
+    const cinematicEnabled = cinematicScroll?.enabled === true;
+    const anchorDist = cinematicEnabled
+      ? (cinematicScroll?.distanceNear ?? sceneDefaults().cinematicScroll.distanceNear)
+      : state.camera.position.distanceTo(lookAtCenter.current);
     const anchorOff = getObjectAnchorWorldOffset(
       motion.anchor,
-      dist,
+      anchorDist,
       persp.fov,
       persp.aspect,
     );
@@ -338,7 +344,6 @@ function AnimatedSceneContent({
     const autoRad = SYNAPSER_AUTO_ROTATE_MAX_RAD_PER_SEC * delta;
     let rawLocalP =
       sceneIndex >= 0 ? getSceneLocalProgress(rawProgressRef.current, sceneIndex, sceneCount) : 0;
-    const cinematicEnabled = cinematicScroll?.enabled === true;
     const scrollRotationActive =
       cinematicEnabled && (cinematicScroll.scrollRotation?.revolutions ?? 0) > 0;
     const scrollRotY = scrollRotationActive
@@ -437,7 +442,7 @@ function EnvironmentController({
   const fogRef = useRef<THREE.Fog | null>(null);
 
   useFrame(() => {
-    const vis = getCinematicSceneVisibilities(progressRef.current, sceneOrder);
+    const vis = getSynapserSceneVisibilities(progressRef.current, sceneOrder, sceneSettings);
     const canvasColor = blendHex(
       sceneOrder.map((id) => ({
         hex: sceneSettings[id]?.background.canvasColor ?? "#0f0c0a",
@@ -499,6 +504,8 @@ function ScrollWorld({
   const timeRefs = useRef<Record<SynapserSceneId, number>>({});
   const { pointer, camera } = useThree();
   const lookAtTarget = useRef(new THREE.Vector3());
+  const cameraForward = useRef(new THREE.Vector3());
+  const cameraEye = useRef(new THREE.Vector3());
   const objectHoverRef = useRef<SynapserObjectHoverState>({ blend: 0, sceneId: null });
   const raycaster = useRef(new THREE.Raycaster());
   const hoverMeshes = useRef<THREE.Object3D[]>([]);
@@ -519,7 +526,7 @@ function ScrollWorld({
 
     const activeIdx = getActiveSceneIndex(rawP, sceneCount);
     cinematicChainHeadRef.current = activeIdx;
-    const vis = getCinematicSceneVisibilities(rawP, sceneOrder);
+    const vis = getSynapserSceneVisibilities(rawP, sceneOrder, sceneSettings);
     const activeId = sceneOrder[activeIdx];
     displayLocalProgressRef.current =
       activeId != null ? getSceneLocalProgress(rawP, activeIdx, sceneCount) : 0;
@@ -545,6 +552,35 @@ function ScrollWorld({
 
     const activeSettings = activeId ? sceneSettings[activeId] : undefined;
     const cinematicZoomOnly = activeSettings?.cinematicScroll.enabled === true;
+
+    if (cinematicZoomOnly && activeSettings && activeId) {
+      const localP = getSceneLocalProgress(rawP, activeIdx, sceneCount);
+      const cinematic = normalizeCinematicScroll(activeSettings.cinematicScroll);
+      const zoomT = scrollDrivenCinematicZoomT(localP, cinematic);
+      const sample = getCinematicCamera(activeSettings, zoomT);
+
+      posX = sample.position[0];
+      posY = sample.position[1];
+      posZ = sample.position[2];
+      fov = sample.fov;
+      near = activeSettings.camera.near;
+      far = activeSettings.camera.far;
+      total = 1;
+
+      cameraEye.current.set(posX, posY, posZ);
+      cameraForward.current.set(sample.forward[0], sample.forward[1], sample.forward[2]);
+      lookAtTarget.current.copy(cameraEye.current).add(cameraForward.current);
+      camera.position.copy(cameraEye.current);
+      camera.up.set(0, 1, 0);
+      camera.lookAt(lookAtTarget.current);
+
+      const persp = camera as PerspectiveCamera;
+      persp.fov = fov;
+      persp.near = near;
+      persp.far = far;
+      persp.updateProjectionMatrix();
+      return;
+    }
 
     sceneOrder.forEach((id, index) => {
       const weight = vis[id] ?? 0;
@@ -748,6 +784,7 @@ function ScrollWorld({
               lighting={settings.lighting}
               progressRef={effectiveProgressRef}
               sceneOrder={sceneOrder}
+              sceneSettings={sceneSettings}
             />
             <SceneObject
               sceneId={def.id}
@@ -851,8 +888,15 @@ export default function SynapserStudioScroll() {
   const [particleNoiseUi, setParticleNoiseUi] = useState(0);
   const sceneCount = sceneOrder.length;
   const firstSceneId = sceneOrder[0];
-  const initial = firstSceneId ? sceneSettings[firstSceneId]?.cinematicScroll : sceneDefaults().cinematicScroll;
-  const firstCamera = firstSceneId ? sceneSettings[firstSceneId]?.camera : undefined;
+  const firstSceneSettings = firstSceneId ? sceneSettings[firstSceneId] : sceneDefaults();
+  const initialCamPose = useMemo(
+    () =>
+      firstSceneSettings.cinematicScroll.enabled
+        ? getCinematicCamera(firstSceneSettings, 0)
+        : null,
+    [firstSceneSettings],
+  );
+  const firstCamera = firstSceneSettings.camera;
   const activeSceneId = sceneOrder[sceneIndex] ?? firstSceneId ?? "";
   const activeSceneDef = sceneList.find((s) => s.id === activeSceneId) ?? sceneList[0];
   const activeScrollGlitch =
@@ -955,7 +999,7 @@ export default function SynapserStudioScroll() {
       <div className="relative h-full w-full">
       <Canvas
         camera={{
-          position: [0, 1.4, initial?.distanceFar ?? 8],
+          position: initialCamPose?.position ?? [0, 1.4, firstSceneSettings.cinematicScroll.distanceFar],
           fov: firstCamera?.fov ?? 45,
           near: 0.1,
           far: 100,

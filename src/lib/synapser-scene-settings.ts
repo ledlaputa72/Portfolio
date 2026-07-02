@@ -488,28 +488,61 @@ export function cinematicZoomT(
 export function getCinematicCamera(
   settings: SynapserSceneSettings,
   zoomT: number,
-): { position: Vec3; lookAt: Vec3; fov: number } {
+): { position: Vec3; lookAt: Vec3; fov: number; forward: Vec3 } {
   const cfg = settings.cinematicScroll;
   const cam = settings.camera;
   const lookAt: Vec3 = [cam.lookAt[0], cam.lookAt[1], cam.lookAt[2]];
   const base: Vec3 = [cam.position[0], cam.position[1], cam.position[2]];
 
-  const dir: Vec3 = [base[0] - lookAt[0], base[1] - lookAt[1], base[2] - lookAt[2]];
-  const baseLen = Math.hypot(dir[0], dir[1], dir[2]);
+  const toLook: Vec3 = [lookAt[0] - base[0], lookAt[1] - base[1], lookAt[2] - base[2]];
+  const baseLen = Math.hypot(toLook[0], toLook[1], toLook[2]);
   if (baseLen < 1e-6) {
-    return { position: base, lookAt, fov: cam.fov };
+    return { position: base, lookAt, fov: cam.fov, forward: [0, 0, -1] };
   }
 
-  const ux = dir[0] / baseLen;
-  const uy = dir[1] / baseLen;
-  const uz = dir[2] / baseLen;
-  const rayDist = lerp(cfg.distanceFar, cfg.distanceNear, clamp01(zoomT));
+  const fwd: Vec3 = [toLook[0] / baseLen, toLook[1] / baseLen, toLook[2] / baseLen];
+  const nearDist = cfg.distanceNear;
+  const farDist = Math.max(nearDist, cfg.distanceFar);
+  const pullBack = (1 - clamp01(zoomT)) * (farDist - nearDist);
+
+  const nearPos: Vec3 = [
+    lookAt[0] - fwd[0] * nearDist,
+    lookAt[1] - fwd[1] * nearDist,
+    lookAt[2] - fwd[2] * nearDist,
+  ];
 
   return {
-    position: [lookAt[0] + ux * rayDist, lookAt[1] + uy * rayDist, lookAt[2] + uz * rayDist],
+    position: [
+      nearPos[0] - fwd[0] * pullBack,
+      nearPos[1] - fwd[1] * pullBack,
+      nearPos[2] - fwd[2] * pullBack,
+    ],
     lookAt,
     fov: cam.fov,
+    forward: fwd,
   };
+}
+
+/** Active scene only — no start crossfade; background/object/floor are fully visible. */
+export function getSynapserSceneVisibilities(
+  globalP: number,
+  sceneIds: string[],
+  sceneSettings: Record<string, { cinematicScroll?: { enabled?: boolean } }>,
+): Record<string, number> {
+  const sceneCount = sceneIds.length;
+  if (sceneCount === 0) return {};
+
+  const activeIdx = getActiveSceneIndex(globalP, sceneCount);
+  const activeId = sceneIds[activeIdx];
+  const cinematic = Boolean(activeId && sceneSettings[activeId]?.cinematicScroll?.enabled);
+
+  if (cinematic) {
+    const result: Record<string, number> = {};
+    for (const id of sceneIds) result[id] = id === activeId ? 1 : 0;
+    return result;
+  }
+
+  return getCinematicSceneVisibilities(globalP, sceneIds);
 }
 
 function clamp01(value: number): number {
