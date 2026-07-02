@@ -40,6 +40,10 @@ import {
   mergeScrollGlitchPatch,
   type SynapserScrollGlitchSettings,
 } from "@/lib/synapser-scroll-glitch";
+import {
+  normalizeSynapserScrollExperience,
+  type SynapserScrollExperience,
+} from "@/lib/synapser-scroll-experience";
 
 export type SceneModelState = {
   mode: "default" | "custom";
@@ -74,6 +78,7 @@ type SynapserModelContextValue = {
   activeSceneSettings: SynapserSceneSettings;
   scrollGlitch: SynapserScrollGlitchSettings;
   scrollGlitchMap: Record<SynapserSceneId, SynapserScrollGlitchSettings>;
+  scrollExperience: SynapserScrollExperience;
   settingsDirty: boolean;
   loading: boolean;
   loadFile: (file: File) => Promise<void>;
@@ -87,6 +92,7 @@ type SynapserModelContextValue = {
   saveSceneSettings: () => void;
   resetSceneSettings: (sceneId?: SynapserSceneId) => void;
   patchScrollGlitch: (patch: Partial<SynapserScrollGlitchSettings>) => void;
+  patchScrollExperience: (patch: Partial<SynapserScrollExperience>) => void;
   resetScrollGlitch: () => void;
   addScene: () => void;
   removeScene: () => boolean;
@@ -129,6 +135,7 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
     projectState.scrollGlitch[selectedScene] ??
     projectState.scrollGlitch[sceneOrder[0]] ??
     DEFAULT_SYNAPSER_SCROLL_GLITCH;
+  const scrollExperience = normalizeSynapserScrollExperience(projectState.scrollExperience);
 
   const revokeSceneUrl = useCallback((sceneId: SynapserSceneId) => {
     const url = urlRefs.current[sceneId];
@@ -325,6 +332,18 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
     [selectedScene],
   );
 
+  const patchScrollExperience = useCallback((patch: Partial<SynapserScrollExperience>) => {
+    settingsTouchedRef.current = true;
+    setProjectState((prev) => ({
+      ...prev,
+      scrollExperience: normalizeSynapserScrollExperience({
+        ...prev.scrollExperience,
+        ...patch,
+      }),
+    }));
+    setSettingsDirty(true);
+  }, []);
+
   const resetScrollGlitch = useCallback(() => {
     settingsTouchedRef.current = true;
     setProjectState((prev) => resetSceneBundle(prev, selectedScene));
@@ -390,6 +409,7 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
       activeSceneSettings,
       scrollGlitch,
       scrollGlitchMap: projectState.scrollGlitch,
+      scrollExperience,
       settingsDirty,
       loading,
       loadFile,
@@ -400,6 +420,7 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
       saveSceneSettings,
       resetSceneSettings,
       patchScrollGlitch,
+      patchScrollExperience,
       resetScrollGlitch,
       addScene,
       removeScene,
@@ -414,6 +435,7 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
       activeSceneSettings,
       scrollGlitch,
       projectState.scrollGlitch,
+      scrollExperience,
       settingsDirty,
       loading,
       loadFile,
@@ -424,6 +446,7 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
       saveSceneSettings,
       resetSceneSettings,
       patchScrollGlitch,
+      patchScrollExperience,
       resetScrollGlitch,
       addScene,
       removeScene,

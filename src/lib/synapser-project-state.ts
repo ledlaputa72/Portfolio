@@ -4,6 +4,11 @@ import {
   type SynapserScrollGlitchSettings,
 } from "./synapser-scroll-glitch";
 import {
+  DEFAULT_SYNAPSER_SCROLL_EXPERIENCE,
+  normalizeSynapserScrollExperience,
+  type SynapserScrollExperience,
+} from "./synapser-scroll-experience";
+import {
   DEFAULT_SYNAPSER_SCENE_SETTINGS,
   mergeSceneSettings,
   sceneDefaults,
@@ -29,7 +34,10 @@ export type SynapserProjectState = {
   definitions: Record<SynapserSceneId, SynapserSceneDefinition>;
   settings: Record<SynapserSceneId, SynapserSceneSettings>;
   scrollGlitch: Record<SynapserSceneId, SynapserScrollGlitchSettings>;
+  scrollExperience: SynapserScrollExperience;
 };
+
+export type { SynapserScrollExperience };
 
 const PROJECT_KEY = "synapser-project-state-v1";
 const LEGACY_SETTINGS_KEY = "synapser-scene-settings-v2";
@@ -131,7 +139,13 @@ export function createDefaultProjectState(): SynapserProjectState {
     scrollGlitch[def.id] = cloneGlitch(DEFAULT_SYNAPSER_SCROLL_GLITCH);
   }
 
-  return { sceneOrder, definitions, settings, scrollGlitch };
+  return {
+    sceneOrder,
+    definitions,
+    settings,
+    scrollGlitch,
+    scrollExperience: { ...DEFAULT_SYNAPSER_SCROLL_EXPERIENCE },
+  };
 }
 
 function migrateLegacyProjectState(): SynapserProjectState {
@@ -208,7 +222,13 @@ export function readSynapserProjectState(): SynapserProjectState {
       );
     }
 
-    return { sceneOrder, definitions, settings, scrollGlitch };
+    return {
+      sceneOrder,
+      definitions,
+      settings,
+      scrollGlitch,
+      scrollExperience: normalizeSynapserScrollExperience(parsed.scrollExperience),
+    };
   } catch {
     return createDefaultProjectState();
   }
@@ -237,6 +257,7 @@ export function addSceneAfter(
   sceneOrder.splice(insertAt, 0, id);
 
   return {
+    ...state,
     sceneOrder,
     definitions: { ...state.definitions, [id]: definition },
     settings: { ...state.settings, [id]: settingsForProcedural(procedural) },
@@ -256,7 +277,7 @@ export function removeScene(state: SynapserProjectState, sceneId: SynapserSceneI
   delete settings[sceneId];
   delete scrollGlitch[sceneId];
 
-  return { sceneOrder, definitions, settings, scrollGlitch };
+  return { ...state, sceneOrder, definitions, settings, scrollGlitch };
 }
 
 export function resetSceneBundle(

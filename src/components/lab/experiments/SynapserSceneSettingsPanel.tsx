@@ -541,7 +541,7 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
           />
 
           <p className="pt-2 font-mono text-[9px] uppercase tracking-[0.25em] text-[#c9a66b]/70">
-            자동 줌 인
+            스크롤 줌 인
           </p>
           <TipRangeRow
             label="시작 %"
@@ -573,23 +573,6 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
                 cinematicScroll: {
                   ...s.cinematicScroll,
                   autoZoomIn: { ...s.cinematicScroll.autoZoomIn, end: v / 100 },
-                },
-              })
-            }
-          />
-          <TipRangeRow
-            label="전환 시간"
-            tip={SCENE_SETTING_TIPS.zoomInDuration}
-            labelWidth="w-28"
-            value={s.cinematicScroll.autoZoomIn.durationMs}
-            min={16}
-            max={3000}
-            step={10}
-            onChange={(durationMs) =>
-              patch({
-                cinematicScroll: {
-                  ...s.cinematicScroll,
-                  autoZoomIn: { ...s.cinematicScroll.autoZoomIn, durationMs },
                 },
               })
             }
@@ -659,7 +642,7 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
           </TipField>
 
           <p className="pt-2 font-mono text-[9px] uppercase tracking-[0.25em] text-[#c9a66b]/70">
-            자동 줌 아웃
+            스크롤 줌 아웃
           </p>
           <TipRangeRow
             label="시작 %"
@@ -691,23 +674,6 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
                 cinematicScroll: {
                   ...s.cinematicScroll,
                   autoZoomOut: { ...s.cinematicScroll.autoZoomOut, end: v / 100 },
-                },
-              })
-            }
-          />
-          <TipRangeRow
-            label="전환 시간"
-            tip={SCENE_SETTING_TIPS.zoomOutDuration}
-            labelWidth="w-28"
-            value={s.cinematicScroll.autoZoomOut.durationMs}
-            min={16}
-            max={3000}
-            step={10}
-            onChange={(durationMs) =>
-              patch({
-                cinematicScroll: {
-                  ...s.cinematicScroll,
-                  autoZoomOut: { ...s.cinematicScroll.autoZoomOut, durationMs },
                 },
               })
             }

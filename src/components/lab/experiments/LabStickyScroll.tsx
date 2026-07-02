@@ -30,6 +30,8 @@ export type LabStickyScrollProps = {
   hint?: string;
   showProgress?: boolean;
   progressLabel?: string;
+  /** GSAP scrub lag in seconds; `0` = instant 1:1 with scroll (default `true` ≈ 0.5s smooth) */
+  scrub?: boolean | number;
 };
 
 function clamp01(v: number) {
@@ -48,6 +50,7 @@ const LabStickyScroll = forwardRef<LabStickyScrollHandle, LabStickyScrollProps>(
       hint,
       showProgress = true,
       progressLabel = "Scroll Progress",
+      scrub = true,
     },
     ref,
   ) {
@@ -94,7 +97,7 @@ const LabStickyScroll = forwardRef<LabStickyScrollHandle, LabStickyScrollProps>(
         trigger: el,
         start: "top top",
         end: "bottom bottom",
-        scrub: true,
+        scrub,
         onUpdate: (self) => {
           progressRef.current = self.progress;
           onProgressRef.current?.(self.progress);
@@ -105,12 +108,13 @@ const LabStickyScroll = forwardRef<LabStickyScrollHandle, LabStickyScrollProps>(
         },
       });
       stRef.current = st;
+      ScrollTrigger.refresh();
 
       return () => {
         st.kill();
         stRef.current = null;
       };
-    }, [progressRef, showProgress]);
+    }, [progressRef, showProgress, scrub, scrollHeightVh]);
 
     return (
       <div

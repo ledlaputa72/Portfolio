@@ -30,6 +30,7 @@ import { useSynapserModel } from "./SynapserModelContext";
 import SynapserScrollGlitchOverlay, {
   synapserGlitchTextStyle,
 } from "./SynapserScrollGlitchOverlay";
+import { getSynapserScrollHeightVh } from "@/lib/synapser-scroll-experience";
 import { applySynapserScrollGlitch, DEFAULT_SYNAPSER_SCROLL_GLITCH, getSynapserFlatGlitchDisplayFromLevel, getSynapserFlatGlitchTransitionMs, getSynapserGlitchDisplay, getSynapserParticleNoiseFromDisplay } from "@/lib/synapser-scroll-glitch";
 import type { SynapserScrollGlitchSettings } from "@/lib/synapser-scroll-glitch";
 import type { SynapserSceneDefinition, SynapserProceduralType } from "@/lib/synapser-project-state";
@@ -37,7 +38,6 @@ import {
   getActiveSceneIndex,
   getCinematicCamera,
   getCinematicSceneVisibilities,
-  getChainedSceneVisibilities,
   getSceneLocalProgress,
   getSynapserTypographyLayoutClasses,
   normalizeSynapserTypography,
@@ -50,10 +50,8 @@ import {
 import { getObjectAnchorWorldOffset } from "@/lib/synapser-anchor-layout";
 import {
   getCinematicScrollRotation,
-  getCinematicZoomRuntime,
-  tickCinematicZoomSystem,
-  type CinematicScrollState,
-  type CinematicZoomRuntime,
+  normalizeCinematicScroll,
+  scrollDrivenCinematicZoomT,
 } from "@/lib/synapser-cinematic-zoom";
 
 /** Floor plane spans far enough that cinematic camera angles never clip edges. */
@@ -483,14 +481,12 @@ function EnvironmentController({
 function ScrollWorld({
   progressRef,
   displayGlitchRef,
-  cinematicZoomRuntimesRef,
   cinematicChainHeadRef,
   displayLocalProgressRef,
   effectiveProgressRef,
 }: {
   progressRef: React.RefObject<number>;
   displayGlitchRef: React.RefObject<number>;
-  cinematicZoomRuntimesRef: React.RefObject<Record<SynapserSceneId, CinematicZoomRuntime>>;
   cinematicChainHeadRef: React.RefObject<number>;
   displayLocalProgressRef: React.RefObject<number>;
   effectiveProgressRef: React.RefObject<number>;
@@ -505,11 +501,6 @@ function ScrollWorld({
   const hoverMeshes = useRef<THREE.Object3D[]>([]);
   const meshScanFrame = useRef(0);
   const smoothedPointer = useRef({ x: 0, y: 0 });
-  const localChainHeadRef = useRef({ index: 0 });
-  const cinematicScrollStateRef = useRef<CinematicScrollState>({
-    prevRawGlobalP: 0,
-    scrollDirection: 1,
-  });
 
   const sceneCount = sceneOrder.length;
 
@@ -522,35 +513,14 @@ function ScrollWorld({
 
   useFrame((state, delta) => {
     const rawP = progressRef.current;
-    const deltaMs = delta * 1000;
 
-    const effectiveP = tickCinematicZoomSystem({
-      rawGlobalP: rawP,
-      sceneOrder,
-      sceneCount,
-      sceneSettings,
-      runtimes: cinematicZoomRuntimesRef.current!,
-      chainHead: localChainHeadRef.current,
-      scrollState: cinematicScrollStateRef.current,
-      deltaMs,
-      getActiveSceneIndex,
-      getSceneLocalProgress,
-    });
-    cinematicChainHeadRef.current = localChainHeadRef.current.index;
-    const vis = getChainedSceneVisibilities(
-      sceneOrder,
-      cinematicZoomRuntimesRef.current!,
-      sceneSettings,
-      localChainHeadRef.current.index,
-      effectiveP,
-    );
-    const activeIdx = localChainHeadRef.current.index;
+    const activeIdx = getActiveSceneIndex(rawP, sceneCount);
+    cinematicChainHeadRef.current = activeIdx;
+    const vis = getCinematicSceneVisibilities(rawP, sceneOrder);
     const activeId = sceneOrder[activeIdx];
-    if (activeId) {
-      const activeRuntime = cinematicZoomRuntimesRef.current?.[activeId];
-      displayLocalProgressRef.current = activeRuntime?.displayLocalP ?? getSceneLocalProgress(effectiveP, activeIdx, sceneCount);
-    }
-    effectiveProgressRef.current = effectiveP;
+    displayLocalProgressRef.current =
+      activeId != null ? getSceneLocalProgress(rawP, activeIdx, sceneCount) : 0;
+    effectiveProgressRef.current = rawP;
 
     let posX = 0;
     let posY = 0;
@@ -574,7 +544,7 @@ function ScrollWorld({
       const weight = vis[id] ?? 0;
       const settings = sceneSettings[id];
       if (!settings) return;
-      const localP = getSceneLocalProgress(effectiveP, index, sceneCount);
+      const localP = getSceneLocalProgress(rawP, index, sceneCount);
       const groupRef = getGroupRef(id);
       if (groupRef.current) groupRef.current.scale.setScalar(weight);
 
@@ -592,8 +562,9 @@ function ScrollWorld({
 
       let sample;
       if (settings.cinematicScroll.enabled) {
-        const runtime = getCinematicZoomRuntime(cinematicZoomRuntimesRef.current!, id);
-        sample = getCinematicCamera(settings, runtime.zoomT);
+        const cinematic = normalizeCinematicScroll(settings.cinematicScroll);
+        const zoomT = scrollDrivenCinematicZoomT(localP, cinematic);
+        sample = getCinematicCamera(settings, zoomT);
       } else if (settings.cameraAnimation.enabled) {
         let t = localP;
         if (!settings.cameraAnimation.useScrollProgress) {
@@ -851,11 +822,11 @@ function SceneTypography({
 }
 
 export default function SynapserStudioScroll() {
-  const { sceneSettings, sceneList, sceneOrder, scrollGlitchMap } = useSynapserModel();
+  const { sceneSettings, sceneList, sceneOrder, scrollGlitchMap, scrollExperience } = useSynapserModel();
+  const scrollHeightVh = getSynapserScrollHeightVh(scrollExperience);
   const progressRef = useRef(0);
   const effectiveProgressRef = useRef(0);
   const displayLocalProgressRef = useRef(0);
-  const cinematicZoomRuntimesRef = useRef<Record<SynapserSceneId, CinematicZoomRuntime>>({});
   const cinematicChainHeadRef = useRef(0);
   const glitchRef = useRef(0);
   const displayGlitchRef = useRef(0);
@@ -955,8 +926,7 @@ export default function SynapserStudioScroll() {
       prevSceneRef.current = nextIdx;
       prevProgressRef.current = p;
 
-      const scrollIdx = getActiveSceneIndex(effectiveProgressRef.current, sceneCount);
-      sceneIndexRef.current = scrollIdx;
+      sceneIndexRef.current = getActiveSceneIndex(p, sceneCount);
     },
     [scrollGlitchMap, sceneOrder, sceneCount],
   );
@@ -965,9 +935,10 @@ export default function SynapserStudioScroll() {
     <LabStickyScroll
       progressRef={progressRef}
       onProgress={handleProgress}
-      scrollHeightVh={400}
+      scrollHeightVh={scrollHeightVh}
+      scrub={0}
       stickyClassName="bg-[#0f0c0a] text-[#f0ebe3]"
-      hint="↓ 스크롤 — 구간별 줌 인·유지·줌 아웃 (스크롤 위치에 연동)"
+      hint="↓ 스크롤 — 구간별 줌 인·유지·줌 아웃 (스크롤 위치에 1:1 연동)"
       progressLabel="Scene Progress"
       showProgress={false}
     >
@@ -984,7 +955,6 @@ export default function SynapserStudioScroll() {
         <ScrollWorld
           progressRef={progressRef}
           displayGlitchRef={displayGlitchRef}
-          cinematicZoomRuntimesRef={cinematicZoomRuntimesRef}
           cinematicChainHeadRef={cinematicChainHeadRef}
           displayLocalProgressRef={displayLocalProgressRef}
           effectiveProgressRef={effectiveProgressRef}

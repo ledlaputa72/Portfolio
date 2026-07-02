@@ -2,6 +2,7 @@
 
 import { useSynapserModel } from "./SynapserModelContext";
 import SynapserModelSettings from "./SynapserModelSettings";
+import SynapserScrollExperienceSettings from "./SynapserScrollExperienceSettings";
 import SynapserSceneSettingsPanel from "./SynapserSceneSettingsPanel";
 import SynapserScrollGlitchSettings from "./SynapserScrollGlitchSettings";
 import { TipField } from "./SynapserSettingControls";
@@ -65,6 +66,7 @@ export default function SynapserStudioSettings({ compact = false }: SynapserStud
         </p>
       </div>
 
+      <SynapserScrollExperienceSettings />
       <SynapserModelSettings compact={compact} hideSceneSelect />
       <SynapserScrollGlitchSettings />
       <SynapserSceneSettingsPanel compact={compact} />
