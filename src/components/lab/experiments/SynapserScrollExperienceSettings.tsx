@@ -4,7 +4,11 @@ import { useState } from "react";
 import { useSynapserModel } from "./SynapserModelContext";
 import { TipRangeRow, TipSection } from "./SynapserSettingControls";
 import { MODEL_SETTING_TIPS } from "./synapser-setting-tips";
-import { getSynapserScrollHeightVh } from "@/lib/synapser-scroll-experience";
+import {
+  getSynapserScrollHeightVh,
+  SYNAPSER_SCROLL_TRACK_SCALE_MAX,
+  SYNAPSER_SCROLL_TRACK_SCALE_MIN,
+} from "@/lib/synapser-scroll-experience";
 
 export default function SynapserScrollExperienceSettings() {
   const [open, setOpen] = useState(true);
@@ -25,9 +29,9 @@ export default function SynapserScrollExperienceSettings() {
           tip={MODEL_SETTING_TIPS.scrollPace}
           labelWidth="w-28"
           value={pacePercent}
-          min={25}
-          max={400}
-          step={5}
+          min={Math.round(SYNAPSER_SCROLL_TRACK_SCALE_MIN * 100)}
+          max={Math.round(SYNAPSER_SCROLL_TRACK_SCALE_MAX * 100)}
+          step={10}
           onChange={(v) => patchScrollExperience({ trackScale: v / 100 })}
         />
         <p className="text-[11px] leading-relaxed text-[#f0ebe3]/35">
