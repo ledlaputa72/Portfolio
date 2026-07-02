@@ -48,6 +48,7 @@ import {
 } from "@/lib/synapser-scene-settings";
 import { getObjectAnchorWorldOffset } from "@/lib/synapser-anchor-layout";
 import {
+  getCinematicScrollRotation,
   getCinematicZoomRuntime,
   resetCinematicZoomRuntime,
   resolveEffectiveGlobalProgress,
@@ -299,12 +300,17 @@ function SceneLights({
 function AnimatedSceneContent({
   sceneId,
   children,
+  rawProgressRef,
 }: {
   sceneId: SynapserSceneId;
   children: ReactNode;
+  rawProgressRef: React.RefObject<number>;
 }) {
-  const { sceneSettings } = useSynapserModel();
+  const { sceneSettings, sceneOrder } = useSynapserModel();
   const motion = sceneSettings[sceneId]?.objectMotion ?? sceneDefaults().objectMotion;
+  const cinematicScroll = sceneSettings[sceneId]?.cinematicScroll;
+  const sceneIndex = sceneOrder.indexOf(sceneId);
+  const sceneCount = sceneOrder.length;
   const groupRef = useRef<Group>(null);
   const floatGroupRef = useRef<Group>(null);
   const { pointer } = useThree();
@@ -331,11 +337,23 @@ function AnimatedSceneContent({
     );
 
     const autoRad = SYNAPSER_AUTO_ROTATE_MAX_RAD_PER_SEC * delta;
+    const rawLocalP =
+      sceneIndex >= 0 ? getSceneLocalProgress(rawProgressRef.current, sceneIndex, sceneCount) : 0;
+    const scrollRotationActive =
+      cinematicScroll?.enabled === true && (cinematicScroll.scrollRotation?.revolutions ?? 0) > 0;
+    const scrollRotY = scrollRotationActive
+      ? getCinematicScrollRotation(rawLocalP, cinematicScroll)
+      : 0;
+
     g.rotation.x += motion.autoRotateX * autoRad;
-    g.rotation.y += motion.autoRotateY * autoRad;
+    if (scrollRotationActive) {
+      g.rotation.y = scrollRotY + pointer.x * motion.pointerTiltY;
+    } else {
+      g.rotation.y += motion.autoRotateY * autoRad;
+      g.rotation.y += pointer.x * motion.pointerTiltY;
+    }
     g.rotation.z += motion.autoRotateZ * autoRad;
     g.rotation.x += pointer.y * motion.pointerTiltX;
-    g.rotation.y += pointer.x * motion.pointerTiltY;
 
     if (motion.floatEnabled && f && motion.floatSpeed > 0 && motion.floatIntensity > 0) {
       floatPhase.current += delta * motion.floatSpeed * SYNAPSER_FLOAT_MAX_HZ * Math.PI * 2;
@@ -368,6 +386,7 @@ function SceneObject({
   procedural,
   displayGlitchRef,
   progressRef,
+  rawProgressRef,
   scrollGlitch,
   objectHoverRef,
 }: {
@@ -375,6 +394,7 @@ function SceneObject({
   procedural: ReactNode;
   displayGlitchRef: React.RefObject<number>;
   progressRef: React.RefObject<number>;
+  rawProgressRef: React.RefObject<number>;
   scrollGlitch: SynapserScrollGlitchSettings;
   objectHoverRef: React.RefObject<SynapserObjectHoverState>;
 }) {
@@ -382,7 +402,7 @@ function SceneObject({
   const scene = scenes[sceneId];
 
   return (
-    <AnimatedSceneContent sceneId={sceneId}>
+    <AnimatedSceneContent sceneId={sceneId} rawProgressRef={rawProgressRef}>
       <SynapserMeshGlitchBinder
         displayGlitchRef={displayGlitchRef}
         progressRef={progressRef}
@@ -748,6 +768,7 @@ function ScrollWorld({
               procedural={<SceneProcedural type={def.procedural} />}
               displayGlitchRef={displayGlitchRef}
               progressRef={effectiveProgressRef}
+              rawProgressRef={progressRef}
               scrollGlitch={scrollGlitchMap[def.id] ?? scrollGlitchMap[sceneOrder[0]]}
               objectHoverRef={objectHoverRef}
             />

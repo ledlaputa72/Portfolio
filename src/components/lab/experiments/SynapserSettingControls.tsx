@@ -1,7 +1,109 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import SynapserColorPicker from "./SynapserColorPicker";
+
+function decimalPlacesFromStep(step: number): number {
+  if (!Number.isFinite(step) || step <= 0) return 2;
+  const s = String(step);
+  if (s.includes("e") || s.includes("E")) {
+    const decimals = Math.ceil(-Math.log10(step));
+    return Math.max(0, decimals);
+  }
+  const dot = s.indexOf(".");
+  return dot === -1 ? 0 : s.length - dot - 1;
+}
+
+function snapToStep(value: number, min: number, max: number, step: number): number {
+  const clamped = Math.max(min, Math.min(max, value));
+  if (!Number.isFinite(step) || step <= 0) return clamped;
+  const snapped = Math.round(clamped / step) * step;
+  const decimals = decimalPlacesFromStep(step);
+  return Number(snapped.toFixed(decimals));
+}
+
+export function EditableRangeValue({
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  className,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (v: number) => void;
+  className?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const decimals = decimalPlacesFromStep(step);
+  const display = value.toFixed(decimals);
+
+  const commit = () => {
+    const parsed = Number(draft);
+    if (!Number.isFinite(parsed)) {
+      setEditing(false);
+      return;
+    }
+    onChange(snapToStep(parsed, min, max, step));
+    setEditing(false);
+  };
+
+  useEffect(() => {
+    if (editing) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [editing]);
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        type="number"
+        value={draft}
+        min={min}
+        max={max}
+        step={step}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit();
+          }
+          if (e.key === "Escape") {
+            e.preventDefault();
+            setEditing(false);
+          }
+        }}
+        onClick={(e) => e.stopPropagation()}
+        className={`w-14 shrink-0 rounded border border-[#c9a66b]/50 bg-[#0f0c0a] px-1 py-0.5 text-right font-mono text-[10px] tabular-nums text-[#f0ebe3] outline-none ${className ?? ""}`}
+        aria-label="값 입력"
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      title="클릭하여 값 입력"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDraft(display);
+        setEditing(true);
+      }}
+      className={`w-14 shrink-0 cursor-text rounded px-0.5 text-right font-mono text-[10px] tabular-nums text-[#f0ebe3]/80 transition-colors hover:bg-[#2a2520]/60 hover:text-[#f0ebe3] ${className ?? ""}`}
+    >
+      {display}
+    </button>
+  );
+}
 
 export function SettingTip({
   label,
@@ -61,7 +163,7 @@ export function TipRangeRow({
           onChange={(e) => onChange(Number(e.target.value))}
           className="w-full accent-[#c9a66b]"
         />
-        <span className="w-10 font-mono text-[10px] tabular-nums">{value.toFixed(2)}</span>
+        <EditableRangeValue value={value} min={min} max={max} step={step} onChange={onChange} />
       </label>
       <span
         role="tooltip"

@@ -52,6 +52,7 @@ export const SCENE_SETTING_TIPS = {
   sectionLighting: "씬 조명·환경광 설정입니다.",
   sectionBackground: "배경색·안개·바닥 설정입니다.",
   sectionMotion: "오브젝트 플로팅·회전·마우스 반응 설정입니다.",
+  sectionObject: "3D 모델의 화면 위치입니다. 선택한 격자점이 모델 중심이 됩니다.",
   sectionScrollZoom: "스크롤 구간별 자동 줌 인·아웃 전환입니다. 0% 진입 시 확대, 80% 이후 축소·씬 전환.",
   cinematicEnabled: "스크롤 기반 시네마틱 줌을 켜거나 끕니다.",
   cinematicDistanceFar: "씬 시작(원경) 카메라 거리입니다.",
@@ -64,6 +65,9 @@ export const SCENE_SETTING_TIPS = {
   zoomOutEnd: "줌 아웃 완료·다음 씬 전환 지점(%)입니다.",
   zoomOutDuration: "줌 아웃 자동 전환에 걸리는 시간(ms)입니다.",
   zoomOutEasing: "줌 아웃 모션 곡선입니다.",
+  scrollRotationRevolutions:
+    "줌 인 끝~줌 아웃 시작 구간에서 스크롤에 따라 도는 바퀴 수입니다. 0=회전 없음, 1=한 바퀴.",
+  scrollRotationEasing: "줌 인 끝에서 줌 아웃 시작까지 회전 속도 분포(모션 곡선)입니다.",
   sectionCamera: "카메라 위치·시야·마우스 오빗·호버 줌 설정입니다.",
   sectionCameraAnim: "스크롤/시간 기반 카메라 키프레임 애니메이션입니다.",
   sectionTypography: "씬 타이틀·서브타이틀 그룹의 화면 위치입니다.",

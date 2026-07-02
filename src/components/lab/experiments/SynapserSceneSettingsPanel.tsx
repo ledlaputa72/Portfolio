@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSynapserModel } from "./SynapserModelContext";
 import SynapserColorPicker from "./SynapserColorPicker";
-import SynapserAnchorGrid from "./SynapserAnchorGrid";
+import SynapserAnchorPicker from "./SynapserAnchorPicker";
 import {
   SettingTip,
   TipCheckboxRow,
@@ -255,6 +255,7 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
     lighting: !compact,
     background: false,
     motion: false,
+    objectLayout: !compact,
     scrollZoom: false,
     camera: false,
     cameraAnim: false,
@@ -408,12 +409,6 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
           open={open.motion}
           onToggle={() => toggle("motion")}
         >
-          <SynapserAnchorGrid
-            label="모델 위치"
-            tip={SCENE_SETTING_TIPS.objectAnchor}
-            value={s.objectMotion.anchor}
-            onChange={(anchor) => patch({ objectMotion: { ...s.objectMotion, anchor } })}
-          />
           <TipCheckboxRow
             label="Float 활성화"
             tip={SCENE_SETTING_TIPS.floatEnabled}
@@ -495,6 +490,20 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
             max={3}
             step={0.05}
             onChange={(groupScale) => patch({ objectMotion: { ...s.objectMotion, groupScale } })}
+          />
+        </TipSection>
+
+        <TipSection
+          title="3D 오브젝트 (Object)"
+          tip={SCENE_SETTING_TIPS.sectionObject}
+          open={open.objectLayout}
+          onToggle={() => toggle("objectLayout")}
+        >
+          <SynapserAnchorPicker
+            value={s.objectMotion.anchor}
+            onChange={(anchor) => patch({ objectMotion: { ...s.objectMotion, anchor } })}
+            alignXTip={SCENE_SETTING_TIPS.objectAnchor}
+            alignYTip={SCENE_SETTING_TIPS.objectAnchor}
           />
         </TipSection>
 
@@ -594,6 +603,48 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
                     ...s.cinematicScroll,
                     autoZoomIn: {
                       ...s.cinematicScroll.autoZoomIn,
+                      easing: e.target.value as CinematicEasing,
+                    },
+                  },
+                })
+              }
+              className="mt-1 w-full rounded-lg border border-[#2a2520] bg-[#0f0c0a] px-3 py-2 text-sm text-[#f0ebe3] outline-none transition-colors focus:border-[#c9a66b]/50"
+            >
+              <option value="linear">직선 (균일)</option>
+              <option value="ease-in">완만히 시작 · 빠르게 끝</option>
+              <option value="ease-out">빠르게 시작 · 완만히 끝</option>
+            </select>
+          </TipField>
+
+          <p className="pt-2 font-mono text-[9px] uppercase tracking-[0.25em] text-[#c9a66b]/70">
+            스크롤 회전
+          </p>
+          <TipRangeRow
+            label="회전 (바퀴)"
+            tip={SCENE_SETTING_TIPS.scrollRotationRevolutions}
+            labelWidth="w-28"
+            value={s.cinematicScroll.scrollRotation.revolutions}
+            min={0}
+            max={8}
+            step={0.25}
+            onChange={(revolutions) =>
+              patch({
+                cinematicScroll: {
+                  ...s.cinematicScroll,
+                  scrollRotation: { ...s.cinematicScroll.scrollRotation, revolutions },
+                },
+              })
+            }
+          />
+          <TipField label="모션" tip={SCENE_SETTING_TIPS.scrollRotationEasing}>
+            <select
+              value={s.cinematicScroll.scrollRotation.easing}
+              onChange={(e) =>
+                patch({
+                  cinematicScroll: {
+                    ...s.cinematicScroll,
+                    scrollRotation: {
+                      ...s.cinematicScroll.scrollRotation,
                       easing: e.target.value as CinematicEasing,
                     },
                   },
@@ -820,11 +871,11 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
           open={open.typography}
           onToggle={() => toggle("typography")}
         >
-          <SynapserAnchorGrid
-            label="타이틀 위치"
-            tip={SCENE_SETTING_TIPS.typographyAnchor}
+          <SynapserAnchorPicker
             value={s.typography}
             onChange={(typography) => patch({ typography })}
+            alignXTip={SCENE_SETTING_TIPS.typographyAlignX}
+            alignYTip={SCENE_SETTING_TIPS.typographyAlignY}
           />
         </TipSection>
 

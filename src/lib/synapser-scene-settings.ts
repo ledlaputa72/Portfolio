@@ -11,6 +11,7 @@ import {
 import {
   DEFAULT_CINEMATIC_ZOOM_IN,
   DEFAULT_CINEMATIC_ZOOM_OUT,
+  DEFAULT_CINEMATIC_SCROLL_ROTATION,
   normalizeCinematicScroll,
   type CinematicEasing,
   type CinematicScrollTransition,
@@ -121,6 +122,10 @@ export type SynapserSceneSettings = {
     holdEnd: number;
     autoZoomIn: CinematicScrollTransition;
     autoZoomOut: CinematicScrollTransition;
+    scrollRotation: {
+      revolutions: number;
+      easing: CinematicEasing;
+    };
   };
   typography: SynapserTypographySettings;
 };
@@ -226,6 +231,7 @@ export function sceneDefaults(
       distanceNear: 4,
       autoZoomIn: { ...DEFAULT_CINEMATIC_ZOOM_IN },
       autoZoomOut: { ...DEFAULT_CINEMATIC_ZOOM_OUT },
+      scrollRotation: { ...DEFAULT_CINEMATIC_SCROLL_ROTATION },
     }),
     typography: { ...DEFAULT_TYPOGRAPHY },
   };

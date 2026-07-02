@@ -17,6 +17,14 @@ export type SynapserCinematicScrollSettings = {
   holdEnd: number;
   autoZoomIn: CinematicScrollTransition;
   autoZoomOut: CinematicScrollTransition;
+  /** Scroll-driven Y rotation between zoom-in end and zoom-out start. */
+  scrollRotation: CinematicScrollRotation;
+};
+
+export type CinematicScrollRotation = {
+  /** Full revolutions across the hold zone (zoom-in end → zoom-out start). */
+  revolutions: number;
+  easing: CinematicEasing;
 };
 
 export type CinematicZoomPhase =
@@ -34,7 +42,7 @@ export type CinematicZoomRuntime = {
   zoomOutStartLocalP: number;
 };
 
-const TRIGGER = 0.004;
+const HOLD_GAP = 0.01;
 
 export const DEFAULT_CINEMATIC_ZOOM_IN: CinematicScrollTransition = {
   start: 0,
@@ -48,6 +56,11 @@ export const DEFAULT_CINEMATIC_ZOOM_OUT: CinematicScrollTransition = {
   end: 1,
   durationMs: 100,
   easing: "ease-in",
+};
+
+export const DEFAULT_CINEMATIC_SCROLL_ROTATION: CinematicScrollRotation = {
+  revolutions: 1,
+  easing: "linear",
 };
 
 export function createCinematicZoomRuntime(): CinematicZoomRuntime {
@@ -73,6 +86,37 @@ export function applyCinematicEasing(t: number, easing: CinematicEasing): number
   if (easing === "ease-in") return x * x;
   if (easing === "ease-out") return 1 - (1 - x) * (1 - x);
   return x;
+}
+
+function holdDisplayProgress(raw: number, inEnd: number, outStart: number): number {
+  return clamp01(Math.max(inEnd, Math.min(raw, outStart)));
+}
+
+export function normalizeCinematicScrollRotation(
+  partial?: Partial<CinematicScrollRotation> | null,
+): CinematicScrollRotation {
+  const revolutions = partial?.revolutions ?? DEFAULT_CINEMATIC_SCROLL_ROTATION.revolutions;
+  return {
+    revolutions: Math.max(0, Math.min(8, Number.isFinite(revolutions) ? revolutions : 0)),
+    easing:
+      partial?.easing === "linear" || partial?.easing === "ease-in" || partial?.easing === "ease-out"
+        ? partial.easing
+        : DEFAULT_CINEMATIC_SCROLL_ROTATION.easing,
+  };
+}
+
+export function getCinematicScrollRotation(
+  rawLocalP: number,
+  config: SynapserCinematicScrollSettings,
+): number {
+  if (!config.enabled || config.scrollRotation.revolutions <= 0) return 0;
+  const inEnd = config.autoZoomIn.end;
+  const outStart = config.autoZoomOut.start;
+  const raw = clamp01(rawLocalP);
+  if (raw <= inEnd || raw >= outStart || outStart <= inEnd + HOLD_GAP) return 0;
+  const t = (raw - inEnd) / (outStart - inEnd);
+  const eased = applyCinematicEasing(t, config.scrollRotation.easing);
+  return eased * config.scrollRotation.revolutions * Math.PI * 2;
 }
 
 export function normalizeCinematicScrollTransition(
@@ -105,7 +149,11 @@ export function normalizeCinematicScroll(
 
   if (autoZoomIn.end < autoZoomIn.start) autoZoomIn.end = autoZoomIn.start;
   if (autoZoomOut.end < autoZoomOut.start) autoZoomOut.end = autoZoomOut.start;
-  if (autoZoomOut.start < autoZoomIn.end) autoZoomOut.start = autoZoomIn.end;
+  if (autoZoomOut.start <= autoZoomIn.end) {
+    autoZoomOut.start = Math.min(1, autoZoomIn.end + HOLD_GAP);
+  }
+
+  const scrollRotation = normalizeCinematicScrollRotation(partial?.scrollRotation);
 
   return {
     enabled: partial?.enabled ?? true,
@@ -115,6 +163,7 @@ export function normalizeCinematicScroll(
     holdEnd: autoZoomOut.start,
     autoZoomIn,
     autoZoomOut,
+    scrollRotation,
   };
 }
 
@@ -127,9 +176,11 @@ export function stepCinematicZoom(
   const raw = clamp01(rawLocalP);
   const inCfg = config.autoZoomIn;
   const outCfg = config.autoZoomOut;
+  const inEnd = inCfg.end;
+  const outStart = outCfg.start;
 
   if (
-    raw <= inCfg.start + TRIGGER &&
+    raw <= inCfg.start + HOLD_GAP &&
     (runtime.phase === "hold" || runtime.phase === "zooming-out" || runtime.phase === "after-out")
   ) {
     Object.assign(runtime, createCinematicZoomRuntime());
@@ -139,38 +190,48 @@ export function stepCinematicZoom(
     case "before-in": {
       runtime.zoomT = 0;
       runtime.displayLocalP = clamp01(Math.min(raw, inCfg.start));
-      if (raw > inCfg.start + TRIGGER) {
+      if (raw > inCfg.start + HOLD_GAP) {
         runtime.phase = "zooming-in";
         runtime.animElapsedMs = 0;
       }
       break;
     }
     case "zooming-in": {
-      if (raw <= inCfg.start + TRIGGER) {
+      if (raw <= inCfg.start + HOLD_GAP) {
         Object.assign(runtime, createCinematicZoomRuntime());
         break;
       }
+
+      if (raw > inEnd + HOLD_GAP) {
+        runtime.phase = "hold";
+        runtime.zoomT = 1;
+        runtime.displayLocalP = holdDisplayProgress(raw, inEnd, outStart);
+        break;
+      }
+
       runtime.animElapsedMs += deltaMs;
       const progress = clamp01(runtime.animElapsedMs / inCfg.durationMs);
       const eased = applyCinematicEasing(progress, inCfg.easing);
       runtime.zoomT = eased;
-      runtime.displayLocalP = lerp(inCfg.start, inCfg.end, eased);
-      if (progress >= 1 || raw >= inCfg.end) {
+      runtime.displayLocalP = lerp(inCfg.start, inEnd, eased);
+
+      if (progress >= 1) {
         runtime.phase = "hold";
         runtime.zoomT = 1;
-        runtime.displayLocalP = Math.max(runtime.displayLocalP, Math.min(raw, outCfg.start));
+        runtime.displayLocalP = holdDisplayProgress(raw, inEnd, outStart);
       }
       break;
     }
     case "hold": {
       runtime.zoomT = 1;
-      runtime.displayLocalP = clamp01(Math.max(inCfg.end, Math.min(raw, outCfg.start)));
-      if (raw < inCfg.end - TRIGGER) {
-        runtime.phase = "zooming-in";
-        runtime.animElapsedMs = 0;
+      runtime.displayLocalP = holdDisplayProgress(raw, inEnd, outStart);
+
+      if (raw <= inCfg.start + HOLD_GAP) {
+        Object.assign(runtime, createCinematicZoomRuntime());
         break;
       }
-      if (raw >= outCfg.start - TRIGGER) {
+
+      if (raw >= outStart - HOLD_GAP) {
         runtime.phase = "zooming-out";
         runtime.animElapsedMs = 0;
         runtime.zoomOutStartLocalP = runtime.displayLocalP;
@@ -178,18 +239,20 @@ export function stepCinematicZoom(
       break;
     }
     case "zooming-out": {
-      if (raw < outCfg.start - TRIGGER) {
+      if (raw < outStart - HOLD_GAP) {
         runtime.phase = "hold";
         runtime.zoomT = 1;
-        runtime.displayLocalP = clamp01(Math.max(inCfg.end, Math.min(raw, outCfg.start)));
+        runtime.displayLocalP = holdDisplayProgress(raw, inEnd, outStart);
         runtime.animElapsedMs = 0;
         break;
       }
+
       runtime.animElapsedMs += deltaMs;
       const progress = clamp01(runtime.animElapsedMs / outCfg.durationMs);
       const eased = applyCinematicEasing(progress, outCfg.easing);
       runtime.zoomT = 1 - eased;
       runtime.displayLocalP = lerp(runtime.zoomOutStartLocalP, outCfg.end, eased);
+
       if (progress >= 1) {
         runtime.phase = "after-out";
         runtime.zoomT = 0;
