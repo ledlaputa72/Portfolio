@@ -333,7 +333,7 @@ function AnimatedSceneContent({
     );
 
     let cinematicOffset: [number, number, number] = [0, 0, 0];
-    let cinematicScale = 1;
+    let cinematicScale: [number, number, number] = [1, 1, 1];
     if (cinematicScroll?.enabled) {
       const runtime = cinematicZoomRuntimesRef.current?.[sceneId];
       const zoomT = runtime?.zoomT ?? 0;
@@ -347,7 +347,11 @@ function AnimatedSceneContent({
       motion.groupOffset[1] + anchorOff[1] + cinematicOffset[1],
       motion.groupOffset[2] + anchorOff[2] + cinematicOffset[2],
     );
-    g.scale.setScalar(motion.groupScale * cinematicScale);
+    g.scale.set(
+      motion.groupScale * cinematicScale[0],
+      motion.groupScale * cinematicScale[1],
+      motion.groupScale * cinematicScale[2],
+    );
 
     const autoRad = SYNAPSER_AUTO_ROTATE_MAX_RAD_PER_SEC * delta;
     let rawLocalP =

@@ -44,6 +44,9 @@ export type CinematicZoomRuntime = {
 
 const HOLD_GAP = 0.01;
 
+/** Uniform scale at 0% before zoom-in completes. */
+export const CINEMATIC_OBJECT_SCALE_START = 0.1;
+
 export const DEFAULT_CINEMATIC_ZOOM_IN: CinematicScrollTransition = {
   start: 0,
   end: 0.2,
@@ -157,7 +160,7 @@ export function normalizeCinematicScroll(
 
   return {
     enabled: partial?.enabled ?? true,
-    distanceFar: partial?.distanceFar ?? 10,
+    distanceFar: partial?.distanceFar ?? 20,
     distanceNear: partial?.distanceNear ?? 4,
     zoomInEnd: autoZoomIn.end,
     holdEnd: autoZoomOut.start,

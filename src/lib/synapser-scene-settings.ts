@@ -12,6 +12,7 @@ import {
   DEFAULT_CINEMATIC_ZOOM_IN,
   DEFAULT_CINEMATIC_ZOOM_OUT,
   DEFAULT_CINEMATIC_SCROLL_ROTATION,
+  CINEMATIC_OBJECT_SCALE_START,
   normalizeCinematicScroll,
   type CinematicEasing,
   type CinematicScrollTransition,
@@ -228,7 +229,7 @@ export function sceneDefaults(
     },
     cinematicScroll: normalizeCinematicScroll({
       enabled: true,
-      distanceFar: 10,
+      distanceFar: 20,
       distanceNear: 4,
       autoZoomIn: { ...DEFAULT_CINEMATIC_ZOOM_IN },
       autoZoomOut: { ...DEFAULT_CINEMATIC_ZOOM_OUT },
@@ -507,28 +508,21 @@ export function getCinematicCamera(
   };
 }
 
-function normalizeVec3(v: Vec3): Vec3 {
-  const len = Math.hypot(v[0], v[1], v[2]) || 1;
-  return [v[0] / len, v[1] / len, v[2] / len];
+function lerpScalar(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
 }
 
-/** Object scale (0→1) and offset from far (camera-opposite) toward origin for cinematic zoom. */
+/** 0%: (0,0,-distanceFar) scale 0.1 — 20%: (0,0,0) scale 1 */
 export function getCinematicObjectTransform(
   settings: SynapserSceneSettings,
   zoomT: number,
-): { scale: number; offset: Vec3 } {
+): { offset: Vec3; scale: Vec3 } {
   const cfg = settings.cinematicScroll;
-  const cam = settings.camera;
   const t = Math.max(0, Math.min(1, zoomT));
-  const away = normalizeVec3([
-    cam.position[0] - cam.lookAt[0],
-    cam.position[1] - cam.lookAt[1],
-    cam.position[2] - cam.lookAt[2],
-  ]);
-  const dist = cfg.distanceFar * (1 - t);
+  const uniformScale = lerpScalar(CINEMATIC_OBJECT_SCALE_START, 1, t);
   return {
-    scale: t,
-    offset: [away[0] * dist, away[1] * dist, away[2] * dist],
+    offset: [0, 0, -cfg.distanceFar * (1 - t)],
+    scale: [uniformScale, uniformScale, uniformScale],
   };
 }
 
