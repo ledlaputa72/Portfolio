@@ -13,6 +13,7 @@ import {
   DEFAULT_CINEMATIC_ZOOM_OUT,
   DEFAULT_CINEMATIC_SCROLL_ROTATION,
   normalizeCinematicScroll,
+  scrollDrivenCinematicZoomT,
   type CinematicEasing,
   type CinematicScrollTransition,
   type CinematicZoomRuntime,
@@ -476,22 +477,12 @@ export function smoothstep(t: number) {
   return x * x * (3 - 2 * x);
 }
 
-/** @deprecated use stepCinematicZoom + runtime zoomT */
+/** @deprecated use scrollDrivenCinematicZoomT */
 export function cinematicZoomT(
   localT: number,
   config: SynapserSceneSettings["cinematicScroll"],
 ): number {
-  const t = Math.max(0, Math.min(1, localT));
-  const zoomInEnd = config.autoZoomIn?.end ?? config.zoomInEnd;
-  const holdEnd = config.autoZoomOut?.start ?? config.holdEnd;
-
-  if (t < zoomInEnd) {
-    return smoothstep(t / zoomInEnd);
-  }
-  if (t < holdEnd) {
-    return 1;
-  }
-  return 1 - smoothstep((t - holdEnd) / (1 - holdEnd));
+  return scrollDrivenCinematicZoomT(localT, normalizeCinematicScroll(config));
 }
 
 export function getCinematicCamera(

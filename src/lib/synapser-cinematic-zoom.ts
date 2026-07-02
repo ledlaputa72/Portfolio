@@ -83,19 +83,11 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
-function lerp(a: number, b: number, t: number): number {
-  return a + (b - a) * t;
-}
-
 export function applyCinematicEasing(t: number, easing: CinematicEasing): number {
   const x = clamp01(t);
   if (easing === "ease-in") return x * x;
   if (easing === "ease-out") return 1 - (1 - x) * (1 - x);
   return x;
-}
-
-function holdDisplayProgress(raw: number, inEnd: number, outStart: number): number {
-  return clamp01(Math.max(inEnd, Math.min(raw, outStart)));
 }
 
 export function resolveScrollDirection(
@@ -183,220 +175,69 @@ export function normalizeCinematicScroll(
   };
 }
 
-/** Scroll down: 0→20% zoom-in, 80→100% zoom-out. */
-function stepCinematicZoomForward(
-  runtime: CinematicZoomRuntime,
-  rawLocalP: number,
+/** Map scene-local scroll progress (0–1) directly to camera zoomT. */
+export function scrollDrivenCinematicZoomT(
+  localP: number,
   config: SynapserCinematicScrollSettings,
-  deltaMs: number,
-): void {
-  const raw = clamp01(rawLocalP);
-  const inCfg = config.autoZoomIn;
-  const outCfg = config.autoZoomOut;
-  const inEnd = inCfg.end;
-  const outStart = outCfg.start;
+): number {
+  const t = clamp01(localP);
+  const inStart = config.autoZoomIn.start;
+  const inEnd = config.autoZoomIn.end;
+  const outStart = config.autoZoomOut.start;
+  const outEnd = config.autoZoomOut.end;
 
-  if (
-    raw <= inCfg.start + HOLD_GAP &&
-    (runtime.phase === "hold" || runtime.phase === "zooming-out" || runtime.phase === "after-out")
-  ) {
-    Object.assign(runtime, createCinematicZoomRuntime());
+  if (t <= inStart + HOLD_GAP) return 0;
+
+  if (t < inEnd - HOLD_GAP) {
+    const span = Math.max(HOLD_GAP, inEnd - inStart);
+    const seg = clamp01((t - inStart) / span);
+    return applyCinematicEasing(seg, config.autoZoomIn.easing);
   }
 
-  switch (runtime.phase) {
-    case "before-in": {
-      runtime.zoomT = 0;
-      runtime.displayLocalP = clamp01(Math.min(raw, inCfg.start));
-      if (raw > inCfg.start + HOLD_GAP) {
-        runtime.phase = "zooming-in";
-        runtime.animElapsedMs = 0;
-      }
-      break;
-    }
-    case "zooming-in": {
-      if (raw <= inCfg.start + HOLD_GAP && runtime.animElapsedMs <= 0) {
-        Object.assign(runtime, createCinematicZoomRuntime());
-        break;
-      }
+  if (t < outStart + HOLD_GAP) return 1;
 
-      if (raw > inEnd + HOLD_GAP) {
-        runtime.phase = "hold";
-        runtime.zoomT = 1;
-        runtime.displayLocalP = holdDisplayProgress(raw, inEnd, outStart);
-        break;
-      }
-
-      runtime.animElapsedMs += deltaMs;
-      const progress = clamp01(runtime.animElapsedMs / inCfg.durationMs);
-      const eased = applyCinematicEasing(progress, inCfg.easing);
-      runtime.zoomT = eased;
-      runtime.displayLocalP = lerp(inCfg.start, inEnd, eased);
-
-      if (progress >= 1) {
-        runtime.phase = "hold";
-        runtime.zoomT = 1;
-        runtime.displayLocalP = holdDisplayProgress(raw, inEnd, outStart);
-      }
-      break;
-    }
-    case "hold": {
-      runtime.zoomT = 1;
-      const scrollBound = holdDisplayProgress(raw, inEnd, outStart);
-      runtime.displayLocalP = Math.max(runtime.displayLocalP, scrollBound);
-
-      if (raw >= outStart - HOLD_GAP) {
-        runtime.phase = "zooming-out";
-        runtime.animElapsedMs = 0;
-        runtime.zoomOutStartLocalP = runtime.displayLocalP;
-      }
-      break;
-    }
-    case "zooming-out": {
-      if (raw < outStart - HOLD_GAP) {
-        runtime.phase = "hold";
-        runtime.zoomT = 1;
-        runtime.displayLocalP = holdDisplayProgress(raw, inEnd, outStart);
-        runtime.animElapsedMs = 0;
-        break;
-      }
-
-      runtime.animElapsedMs += deltaMs;
-      const progress = clamp01(runtime.animElapsedMs / outCfg.durationMs);
-      const eased = applyCinematicEasing(progress, outCfg.easing);
-      runtime.zoomT = 1 - eased;
-      runtime.displayLocalP = lerp(runtime.zoomOutStartLocalP, outCfg.end, eased);
-
-      if (progress >= 1) {
-        runtime.phase = "after-out";
-        runtime.zoomT = 0;
-        runtime.displayLocalP = outCfg.end;
-      }
-      break;
-    }
-    case "after-out": {
-      runtime.zoomT = 0;
-      runtime.displayLocalP = outCfg.end;
-      break;
-    }
+  if (t < outEnd - HOLD_GAP) {
+    const span = Math.max(HOLD_GAP, outEnd - outStart);
+    const seg = clamp01((t - outStart) / span);
+    return 1 - applyCinematicEasing(seg, config.autoZoomOut.easing);
   }
+
+  return 0;
 }
 
-/** Scroll up: 100→80% reverse zoom-out, 20→0% reverse zoom-in. */
-function stepCinematicZoomReverse(
-  runtime: CinematicZoomRuntime,
-  rawLocalP: number,
+export function cinematicPhaseFromScroll(
+  localP: number,
   config: SynapserCinematicScrollSettings,
-  deltaMs: number,
-): void {
-  const raw = clamp01(rawLocalP);
-  const inCfg = config.autoZoomIn;
-  const outCfg = config.autoZoomOut;
-  const inEnd = inCfg.end;
-  const outStart = outCfg.start;
-
-  if (
-    raw >= outCfg.end - HOLD_GAP &&
-    (runtime.phase === "hold" || runtime.phase === "zooming-in" || runtime.phase === "before-in")
-  ) {
-    runtime.phase = "after-out";
-    runtime.zoomT = 0;
-    runtime.displayLocalP = outCfg.end;
-    runtime.animElapsedMs = 0;
-    runtime.zoomOutStartLocalP = outStart;
-  }
-
-  switch (runtime.phase) {
-    case "after-out": {
-      runtime.zoomT = 0;
-      runtime.displayLocalP = outCfg.end;
-      if (raw < outCfg.end - HOLD_GAP) {
-        runtime.phase = "zooming-out";
-        runtime.animElapsedMs = 0;
-        runtime.zoomOutStartLocalP = outCfg.end;
-      }
-      break;
-    }
-    case "zooming-out": {
-      if (raw >= outCfg.end - HOLD_GAP && runtime.animElapsedMs <= 0) {
-        runtime.phase = "after-out";
-        runtime.zoomT = 0;
-        runtime.displayLocalP = outCfg.end;
-        break;
-      }
-
-      if (raw < outStart + HOLD_GAP) {
-        runtime.phase = "hold";
-        runtime.zoomT = 1;
-        runtime.displayLocalP = holdDisplayProgress(raw, inEnd, outStart);
-        break;
-      }
-
-      runtime.animElapsedMs += deltaMs;
-      const progress = clamp01(runtime.animElapsedMs / outCfg.durationMs);
-      const eased = applyCinematicEasing(progress, outCfg.easing);
-      runtime.zoomT = eased;
-      runtime.displayLocalP = lerp(outCfg.end, outStart, eased);
-
-      if (progress >= 1) {
-        runtime.phase = "hold";
-        runtime.zoomT = 1;
-        runtime.displayLocalP = holdDisplayProgress(raw, inEnd, outStart);
-      }
-      break;
-    }
-    case "hold": {
-      runtime.zoomT = 1;
-      const scrollBound = holdDisplayProgress(raw, inEnd, outStart);
-      runtime.displayLocalP = Math.min(runtime.displayLocalP, scrollBound);
-
-      if (raw <= inEnd + HOLD_GAP) {
-        runtime.phase = "zooming-in";
-        runtime.animElapsedMs = 0;
-      }
-      break;
-    }
-    case "zooming-in": {
-      if (raw > inEnd + HOLD_GAP) {
-        runtime.phase = "hold";
-        runtime.zoomT = 1;
-        runtime.displayLocalP = holdDisplayProgress(raw, inEnd, outStart);
-        runtime.animElapsedMs = 0;
-        break;
-      }
-
-      runtime.animElapsedMs += deltaMs;
-      const progress = clamp01(runtime.animElapsedMs / inCfg.durationMs);
-      const eased = applyCinematicEasing(progress, inCfg.easing);
-      runtime.zoomT = 1 - eased;
-      runtime.displayLocalP = lerp(inEnd, inCfg.start, eased);
-
-      if (progress >= 1) {
-        runtime.phase = "before-in";
-        runtime.zoomT = 0;
-        runtime.displayLocalP = inCfg.start;
-      }
-      break;
-    }
-    case "before-in": {
-      runtime.zoomT = 0;
-      runtime.displayLocalP = clamp01(Math.max(raw, inCfg.start));
-      break;
-    }
-  }
+): CinematicZoomPhase {
+  const t = clamp01(localP);
+  if (t <= config.autoZoomIn.start + HOLD_GAP) return "before-in";
+  if (t < config.autoZoomIn.end - HOLD_GAP) return "zooming-in";
+  if (t < config.autoZoomOut.start + HOLD_GAP) return "hold";
+  if (t < config.autoZoomOut.end - HOLD_GAP) return "zooming-out";
+  return "after-out";
 }
 
+function applyScrollDrivenCinematicRuntime(
+  runtime: CinematicZoomRuntime,
+  localP: number,
+  config: SynapserCinematicScrollSettings,
+): void {
+  const clamped = clamp01(localP);
+  runtime.displayLocalP = clamped;
+  runtime.zoomT = scrollDrivenCinematicZoomT(clamped, config);
+  runtime.phase = cinematicPhaseFromScroll(clamped, config);
+  runtime.animElapsedMs = 0;
+}
+
+/** @deprecated time-based; scroll position drives zoom via tickCinematicZoomSystem */
 export function stepCinematicZoom(
   runtime: CinematicZoomRuntime,
   rawLocalP: number,
   config: SynapserCinematicScrollSettings,
-  deltaMs: number,
-  direction: 1 | -1 = 1,
+  _deltaMs: number,
+  _direction: 1 | -1 = 1,
 ): void {
-  if (direction < 0) {
-    stepCinematicZoomReverse(runtime, rawLocalP, config, deltaMs);
-  } else {
-    stepCinematicZoomForward(runtime, rawLocalP, config, deltaMs);
-  }
+  applyScrollDrivenCinematicRuntime(runtime, rawLocalP, config);
 }
 
 export function effectiveGlobalFromDisplayLocal(
@@ -412,85 +253,12 @@ export function effectiveGlobalFromDisplayLocal(
 export function syncCinematicChainHead(
   chainHead: { index: number },
   rawGlobalP: number,
-  prevRawGlobalP: number,
-  scrollDirection: 1 | -1,
+  _prevRawGlobalP: number,
+  _scrollDirection: 1 | -1,
   sceneCount: number,
   getActiveSceneIndex: (globalP: number, sceneCount: number) => number,
 ): void {
-  const scrollHead = getActiveSceneIndex(rawGlobalP, sceneCount);
-
-  if (scrollDirection < 0 && scrollHead < chainHead.index) {
-    chainHead.index = scrollHead;
-    return;
-  }
-
-  if (scrollDirection > 0) return;
-
-  const scrollBackEpsilon = 1 / 2000;
-  if (rawGlobalP < prevRawGlobalP - scrollBackEpsilon && scrollHead < chainHead.index) {
-    chainHead.index = scrollHead;
-  }
-}
-
-function kickNextSceneZoomIn(
-  runtimes: Record<string, CinematicZoomRuntime>,
-  nextSceneId: string,
-  nextConfig: SynapserCinematicScrollSettings,
-): void {
-  const nextRuntime = getCinematicZoomRuntime(runtimes, nextSceneId);
-  nextRuntime.phase = "zooming-in";
-  nextRuntime.animElapsedMs = 0;
-  nextRuntime.zoomT = 0;
-  nextRuntime.displayLocalP = nextConfig.autoZoomIn.start;
-}
-
-function kickPrevSceneAfterOut(
-  runtimes: Record<string, CinematicZoomRuntime>,
-  prevSceneId: string,
-  prevConfig: SynapserCinematicScrollSettings,
-): void {
-  const prevRuntime = getCinematicZoomRuntime(runtimes, prevSceneId);
-  prevRuntime.phase = "after-out";
-  prevRuntime.animElapsedMs = 0;
-  prevRuntime.zoomT = 0;
-  prevRuntime.displayLocalP = prevConfig.autoZoomOut.end;
-  prevRuntime.zoomOutStartLocalP = prevConfig.autoZoomOut.start;
-}
-
-function cinematicStepRawForward(
-  runtime: CinematicZoomRuntime,
-  rawLocalP: number,
-  config: SynapserCinematicScrollSettings,
-): number {
-  const inStart = config.autoZoomIn.start;
-  const inEnd = config.autoZoomIn.end;
-  const autoDriven =
-    runtime.phase === "zooming-in" ||
-    runtime.phase === "hold" ||
-    runtime.phase === "zooming-out" ||
-    runtime.phase === "after-out";
-  if (autoDriven && rawLocalP < inEnd - HOLD_GAP) {
-    return Math.max(runtime.displayLocalP, inStart + HOLD_GAP * 2);
-  }
-  return rawLocalP;
-}
-
-function cinematicStepRawReverse(
-  runtime: CinematicZoomRuntime,
-  rawLocalP: number,
-  config: SynapserCinematicScrollSettings,
-): number {
-  const outStart = config.autoZoomOut.start;
-  const outEnd = config.autoZoomOut.end;
-  const autoDriven =
-    runtime.phase === "zooming-out" ||
-    runtime.phase === "hold" ||
-    runtime.phase === "zooming-in" ||
-    runtime.phase === "before-in";
-  if (autoDriven && rawLocalP > outStart + HOLD_GAP) {
-    return Math.min(runtime.displayLocalP, outEnd - HOLD_GAP * 2);
-  }
-  return rawLocalP;
+  chainHead.index = getActiveSceneIndex(rawGlobalP, sceneCount);
 }
 
 export function tickCinematicZoomSystem({
@@ -501,7 +269,6 @@ export function tickCinematicZoomSystem({
   runtimes,
   chainHead,
   scrollState,
-  deltaMs,
   getActiveSceneIndex,
   getSceneLocalProgress,
 }: {
@@ -512,146 +279,65 @@ export function tickCinematicZoomSystem({
   runtimes: Record<string, CinematicZoomRuntime>;
   chainHead: { index: number };
   scrollState: CinematicScrollState;
-  deltaMs: number;
+  deltaMs?: number;
   getActiveSceneIndex: (globalP: number, sceneCount: number) => number;
   getSceneLocalProgress: (globalP: number, sceneIndex: number, sceneCount: number) => number;
 }): number {
   if (sceneCount <= 0) return rawGlobalP;
 
-  const scrollDirection = resolveScrollDirection(
+  scrollState.scrollDirection = resolveScrollDirection(
     rawGlobalP,
     scrollState.prevRawGlobalP,
     scrollState.scrollDirection,
   );
-  scrollState.scrollDirection = scrollDirection;
+  scrollState.prevRawGlobalP = rawGlobalP;
 
   syncCinematicChainHead(
     chainHead,
     rawGlobalP,
     scrollState.prevRawGlobalP,
-    scrollDirection,
+    scrollState.scrollDirection,
     sceneCount,
     getActiveSceneIndex,
   );
-  scrollState.prevRawGlobalP = rawGlobalP;
   chainHead.index = Math.max(0, Math.min(sceneCount - 1, chainHead.index));
+
+  const activeIndex = chainHead.index;
 
   for (let i = 0; i < sceneOrder.length; i++) {
     const id = sceneOrder[i];
     const config = sceneSettings[id]?.cinematicScroll;
     if (!config?.enabled) continue;
+
+    const localP = getSceneLocalProgress(rawGlobalP, i, sceneCount);
     const runtime = getCinematicZoomRuntime(runtimes, id);
 
-    if (scrollDirection > 0) {
-      if (i < chainHead.index) {
+    if (localP < -0.02) {
+      if (i < activeIndex) {
         runtime.phase = "after-out";
         runtime.zoomT = 0;
         runtime.displayLocalP = config.autoZoomOut.end;
-      } else if (i > chainHead.index) {
+      } else {
         resetCinematicZoomRuntime(runtimes, id);
       }
-    } else if (i > chainHead.index) {
-      resetCinematicZoomRuntime(runtimes, id);
-    } else if (i < chainHead.index) {
-      runtime.phase = "before-in";
-      runtime.zoomT = 0;
-      runtime.displayLocalP = config.autoZoomIn.start;
-      runtime.animElapsedMs = 0;
+      continue;
     }
+
+    if (localP > 1.02) {
+      if (i > activeIndex) {
+        resetCinematicZoomRuntime(runtimes, id);
+      } else {
+        runtime.phase = "before-in";
+        runtime.zoomT = 0;
+        runtime.displayLocalP = config.autoZoomIn.start;
+      }
+      continue;
+    }
+
+    applyScrollDrivenCinematicRuntime(runtime, localP, config);
   }
 
-  const maxPasses = sceneCount * 2;
-  for (let pass = 0; pass < maxPasses; pass++) {
-    const headIndex = chainHead.index;
-    const headId = sceneOrder[headIndex];
-    if (!headId) break;
-    const headConfig = sceneSettings[headId]?.cinematicScroll;
-    if (!headConfig?.enabled) {
-      if (scrollDirection > 0 && headIndex < sceneCount - 1) {
-        chainHead.index = headIndex + 1;
-        continue;
-      }
-      if (scrollDirection < 0 && headIndex > 0) {
-        chainHead.index = headIndex - 1;
-        continue;
-      }
-      return rawGlobalP;
-    }
-
-    const headRuntime = getCinematicZoomRuntime(runtimes, headId);
-    const rawLocalP = getSceneLocalProgress(rawGlobalP, headIndex, sceneCount);
-
-    if (
-      scrollDirection < 0 &&
-      rawLocalP >= headConfig.autoZoomOut.start - HOLD_GAP &&
-      (headRuntime.phase === "before-in" || headRuntime.phase === "zooming-in")
-    ) {
-      headRuntime.phase = "after-out";
-      headRuntime.zoomT = 0;
-      headRuntime.displayLocalP = headConfig.autoZoomOut.end;
-      headRuntime.animElapsedMs = 0;
-      headRuntime.zoomOutStartLocalP = headConfig.autoZoomOut.start;
-    }
-
-    if (scrollDirection > 0 && headIndex > 0) {
-      const prevId = sceneOrder[headIndex - 1];
-      const prevRuntime = runtimes[prevId];
-      const prevConfig = sceneSettings[prevId]?.cinematicScroll;
-      if (
-        prevConfig?.enabled &&
-        prevRuntime?.phase === "after-out" &&
-        headRuntime.phase === "before-in"
-      ) {
-        kickNextSceneZoomIn(runtimes, headId, headConfig);
-      }
-    }
-
-    if (scrollDirection < 0 && headIndex > 0) {
-      const prevId = sceneOrder[headIndex - 1];
-      const prevRuntime = runtimes[prevId];
-      const prevConfig = sceneSettings[prevId]?.cinematicScroll;
-      if (
-        prevConfig?.enabled &&
-        headRuntime.phase === "before-in" &&
-        prevRuntime?.phase === "before-in"
-      ) {
-        kickPrevSceneAfterOut(runtimes, prevId, prevConfig);
-        chainHead.index = headIndex - 1;
-        continue;
-      }
-    }
-
-    const stepRaw =
-      scrollDirection < 0
-        ? cinematicStepRawReverse(headRuntime, rawLocalP, headConfig)
-        : cinematicStepRawForward(headRuntime, rawLocalP, headConfig);
-
-    stepCinematicZoom(headRuntime, stepRaw, headConfig, deltaMs, scrollDirection);
-
-    if (
-      scrollDirection > 0 &&
-      headRuntime.phase === "after-out" &&
-      headIndex < sceneCount - 1
-    ) {
-      const nextId = sceneOrder[headIndex + 1];
-      const nextConfig = sceneSettings[nextId]?.cinematicScroll;
-      const nextRuntime = runtimes[nextId];
-      if (nextConfig?.enabled && nextRuntime?.phase === "before-in") {
-        kickNextSceneZoomIn(runtimes, nextId, nextConfig);
-        chainHead.index = headIndex + 1;
-        continue;
-      }
-    }
-
-    break;
-  }
-
-  const finalHeadId = sceneOrder[chainHead.index];
-  const finalRuntime = finalHeadId ? runtimes[finalHeadId] : undefined;
-  const finalConfig = finalHeadId ? sceneSettings[finalHeadId]?.cinematicScroll : undefined;
-  if (!finalRuntime || !finalConfig?.enabled) return rawGlobalP;
-
-  return effectiveGlobalFromDisplayLocal(chainHead.index, finalRuntime.displayLocalP, sceneCount);
+  return rawGlobalP;
 }
 
 export function resolveEffectiveGlobalProgress(

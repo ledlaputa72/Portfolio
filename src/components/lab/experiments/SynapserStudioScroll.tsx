@@ -301,12 +301,10 @@ function AnimatedSceneContent({
   sceneId,
   children,
   rawProgressRef,
-  cinematicZoomRuntimesRef,
 }: {
   sceneId: SynapserSceneId;
   children: ReactNode;
   rawProgressRef: React.RefObject<number>;
-  cinematicZoomRuntimesRef: React.RefObject<Record<SynapserSceneId, CinematicZoomRuntime>>;
 }) {
   const { sceneSettings, sceneOrder } = useSynapserModel();
   const motion = sceneSettings[sceneId]?.objectMotion ?? sceneDefaults().objectMotion;
@@ -342,10 +340,6 @@ function AnimatedSceneContent({
     const autoRad = SYNAPSER_AUTO_ROTATE_MAX_RAD_PER_SEC * delta;
     let rawLocalP =
       sceneIndex >= 0 ? getSceneLocalProgress(rawProgressRef.current, sceneIndex, sceneCount) : 0;
-    if (cinematicScroll?.enabled) {
-      const runtime = cinematicZoomRuntimesRef.current?.[sceneId];
-      if (runtime) rawLocalP = runtime.displayLocalP;
-    }
     const scrollRotationActive =
       cinematicScroll?.enabled === true && (cinematicScroll.scrollRotation?.revolutions ?? 0) > 0;
     const scrollRotY = scrollRotationActive
@@ -394,7 +388,6 @@ function SceneObject({
   displayGlitchRef,
   progressRef,
   rawProgressRef,
-  cinematicZoomRuntimesRef,
   scrollGlitch,
   objectHoverRef,
 }: {
@@ -403,7 +396,6 @@ function SceneObject({
   displayGlitchRef: React.RefObject<number>;
   progressRef: React.RefObject<number>;
   rawProgressRef: React.RefObject<number>;
-  cinematicZoomRuntimesRef: React.RefObject<Record<SynapserSceneId, CinematicZoomRuntime>>;
   scrollGlitch: SynapserScrollGlitchSettings;
   objectHoverRef: React.RefObject<SynapserObjectHoverState>;
 }) {
@@ -411,11 +403,7 @@ function SceneObject({
   const scene = scenes[sceneId];
 
   return (
-    <AnimatedSceneContent
-      sceneId={sceneId}
-      rawProgressRef={rawProgressRef}
-      cinematicZoomRuntimesRef={cinematicZoomRuntimesRef}
-    >
+    <AnimatedSceneContent sceneId={sceneId} rawProgressRef={rawProgressRef}>
       <SynapserMeshGlitchBinder
         displayGlitchRef={displayGlitchRef}
         progressRef={progressRef}
@@ -786,7 +774,6 @@ function ScrollWorld({
               displayGlitchRef={displayGlitchRef}
               progressRef={effectiveProgressRef}
               rawProgressRef={progressRef}
-              cinematicZoomRuntimesRef={cinematicZoomRuntimesRef}
               scrollGlitch={scrollGlitchMap[def.id] ?? scrollGlitchMap[sceneOrder[0]]}
               objectHoverRef={objectHoverRef}
             />
@@ -980,7 +967,7 @@ export default function SynapserStudioScroll() {
       onProgress={handleProgress}
       scrollHeightVh={400}
       stickyClassName="bg-[#0f0c0a] text-[#f0ebe3]"
-      hint="↓ 스크롤 — 진입 시 자동 줌인 · 유지 · 80% 이후 자동 줌아웃·씬 전환"
+      hint="↓ 스크롤 — 구간별 줌 인·유지·줌 아웃 (스크롤 위치에 연동)"
       progressLabel="Scene Progress"
       showProgress={false}
     >
