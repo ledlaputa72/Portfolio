@@ -35,8 +35,8 @@ export default function SynapserScrollExperienceSettings() {
           onChange={(v) => patchScrollExperience({ trackScale: v / 100 })}
         />
         <p className="text-[11px] leading-relaxed text-[#f0ebe3]/35">
-          현재 트랙 길이 약 {trackVh}vh · 100% = 기본 속도. 값을 올리면 같은 %까지 더 많이 스크롤해야
-          합니다.
+          현재 트랙 길이 약 {trackVh}vh · 범위 25%–{Math.round(SYNAPSER_SCROLL_TRACK_SCALE_MAX * 100)}%
+          (100% = 기본). 값을 올리면 같은 %까지 더 많이 스크롤해야 합니다.
         </p>
       </TipSection>
     </div>

@@ -10,20 +10,26 @@ export type SynapserScrollExperience = {
 };
 
 export const DEFAULT_SYNAPSER_SCROLL_EXPERIENCE: SynapserScrollExperience = {
-  trackScale: 1,
+  trackScale: 10,
 };
 
 export const SYNAPSER_SCROLL_TRACK_SCALE_MIN = 0.25;
 export const SYNAPSER_SCROLL_TRACK_SCALE_MAX = 10;
+/** Previous UI cap before track scale could exceed 4×. */
+const LEGACY_SCROLL_TRACK_SCALE_CAP = 4;
 
 export function normalizeSynapserScrollExperience(
   partial?: Partial<SynapserScrollExperience> | null,
 ): SynapserScrollExperience {
-  const raw = partial?.trackScale ?? DEFAULT_SYNAPSER_SCROLL_EXPERIENCE.trackScale;
+  let raw = partial?.trackScale ?? DEFAULT_SYNAPSER_SCROLL_EXPERIENCE.trackScale;
+  // Migrate saves that were clamped at the old 400% maximum.
+  if (Number.isFinite(raw) && Math.abs(raw - LEGACY_SCROLL_TRACK_SCALE_CAP) < 0.05) {
+    raw = SYNAPSER_SCROLL_TRACK_SCALE_MAX;
+  }
   return {
     trackScale: Math.max(
       SYNAPSER_SCROLL_TRACK_SCALE_MIN,
-      Math.min(SYNAPSER_SCROLL_TRACK_SCALE_MAX, Number.isFinite(raw) ? raw : 1),
+      Math.min(SYNAPSER_SCROLL_TRACK_SCALE_MAX, Number.isFinite(raw) ? raw : 10),
     ),
   };
 }
