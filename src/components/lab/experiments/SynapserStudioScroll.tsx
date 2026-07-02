@@ -35,7 +35,7 @@ import type { SynapserScrollGlitchSettings } from "@/lib/synapser-scroll-glitch"
 import type { SynapserSceneDefinition, SynapserProceduralType } from "@/lib/synapser-project-state";
 import {
   getActiveSceneIndex,
-  getCinematicObjectTransform,
+  getCinematicCamera,
   getCinematicSceneVisibilities,
   getChainedSceneVisibilities,
   getSceneLocalProgress,
@@ -50,6 +50,7 @@ import {
 import { getObjectAnchorWorldOffset } from "@/lib/synapser-anchor-layout";
 import {
   getCinematicScrollRotation,
+  getCinematicZoomRuntime,
   tickCinematicZoomSystem,
   type CinematicScrollState,
   type CinematicZoomRuntime,
@@ -308,9 +309,8 @@ function AnimatedSceneContent({
   cinematicZoomRuntimesRef: React.RefObject<Record<SynapserSceneId, CinematicZoomRuntime>>;
 }) {
   const { sceneSettings, sceneOrder } = useSynapserModel();
-  const settings = sceneSettings[sceneId] ?? sceneDefaults();
-  const motion = settings.objectMotion;
-  const cinematicScroll = settings.cinematicScroll;
+  const motion = sceneSettings[sceneId]?.objectMotion ?? sceneDefaults().objectMotion;
+  const cinematicScroll = sceneSettings[sceneId]?.cinematicScroll;
   const sceneIndex = sceneOrder.indexOf(sceneId);
   const sceneCount = sceneOrder.length;
   const groupRef = useRef<Group>(null);
@@ -333,25 +333,10 @@ function AnimatedSceneContent({
       persp.aspect,
     );
 
-    let cinematicOffset: [number, number, number] = [0, 0, 0];
-    let cinematicScale: [number, number, number] = [1, 1, 1];
-    if (cinematicScroll?.enabled) {
-      const runtime = cinematicZoomRuntimesRef.current?.[sceneId];
-      const zoomT = runtime?.zoomT ?? 0;
-      const transform = getCinematicObjectTransform(settings, zoomT);
-      cinematicOffset = transform.offset;
-      cinematicScale = transform.scale;
-    }
-
     g.position.set(
-      motion.groupOffset[0] + anchorOff[0] + cinematicOffset[0],
-      motion.groupOffset[1] + anchorOff[1] + cinematicOffset[1],
-      motion.groupOffset[2] + anchorOff[2] + cinematicOffset[2],
-    );
-    g.scale.set(
-      motion.groupScale * cinematicScale[0],
-      motion.groupScale * cinematicScale[1],
-      motion.groupScale * cinematicScale[2],
+      motion.groupOffset[0] + anchorOff[0],
+      motion.groupOffset[1] + anchorOff[1],
+      motion.groupOffset[2] + anchorOff[2],
     );
 
     const autoRad = SYNAPSER_AUTO_ROTATE_MAX_RAD_PER_SEC * delta;
@@ -397,7 +382,7 @@ function AnimatedSceneContent({
   });
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} scale={motion.groupScale}>
       {motion.floatEnabled ? <group ref={floatGroupRef}>{children}</group> : children}
     </group>
   );
@@ -619,11 +604,8 @@ function ScrollWorld({
 
       let sample;
       if (settings.cinematicScroll.enabled) {
-        sample = {
-          position: settings.camera.position,
-          lookAt: settings.camera.lookAt,
-          fov: settings.camera.fov,
-        };
+        const runtime = getCinematicZoomRuntime(cinematicZoomRuntimesRef.current!, id);
+        sample = getCinematicCamera(settings, runtime.zoomT);
       } else if (settings.cameraAnimation.enabled) {
         let t = localP;
         if (!settings.cameraAnimation.useScrollProgress) {
@@ -901,6 +883,7 @@ export default function SynapserStudioScroll() {
   const [particleNoiseUi, setParticleNoiseUi] = useState(0);
   const sceneCount = sceneOrder.length;
   const firstSceneId = sceneOrder[0];
+  const initial = firstSceneId ? sceneSettings[firstSceneId]?.cinematicScroll : sceneDefaults().cinematicScroll;
   const firstCamera = firstSceneId ? sceneSettings[firstSceneId]?.camera : undefined;
   const activeSceneId = sceneOrder[sceneIndex] ?? firstSceneId ?? "";
   const activeSceneDef = sceneList.find((s) => s.id === activeSceneId) ?? sceneList[0];
@@ -997,14 +980,14 @@ export default function SynapserStudioScroll() {
       onProgress={handleProgress}
       scrollHeightVh={400}
       stickyClassName="bg-[#0f0c0a] text-[#f0ebe3]"
-      hint="↓ 스크롤 — 진입 시 오브젝트 자동 확대·이동 · 유지 · 80% 이후 축소·씬 전환"
+      hint="↓ 스크롤 — 진입 시 자동 줌인 · 유지 · 80% 이후 자동 줌아웃·씬 전환"
       progressLabel="Scene Progress"
       showProgress={false}
     >
       <div className="relative h-full w-full">
       <Canvas
         camera={{
-          position: firstCamera?.position ?? [0, 1.4, 5.5],
+          position: [0, 1.4, initial?.distanceFar ?? 8],
           fov: firstCamera?.fov ?? 45,
           near: 0.1,
           far: 100,

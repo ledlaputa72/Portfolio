@@ -12,7 +12,6 @@ import {
   DEFAULT_CINEMATIC_ZOOM_IN,
   DEFAULT_CINEMATIC_ZOOM_OUT,
   DEFAULT_CINEMATIC_SCROLL_ROTATION,
-  CINEMATIC_OBJECT_SCALE_START,
   normalizeCinematicScroll,
   type CinematicEasing,
   type CinematicScrollTransition,
@@ -229,7 +228,7 @@ export function sceneDefaults(
     },
     cinematicScroll: normalizeCinematicScroll({
       enabled: true,
-      distanceFar: 20,
+      distanceFar: 10,
       distanceNear: 4,
       autoZoomIn: { ...DEFAULT_CINEMATIC_ZOOM_IN },
       autoZoomOut: { ...DEFAULT_CINEMATIC_ZOOM_OUT },
@@ -495,35 +494,25 @@ export function cinematicZoomT(
   return 1 - smoothstep((t - holdEnd) / (1 - holdEnd));
 }
 
-/** @deprecated camera stays fixed; use getCinematicObjectTransform */
 export function getCinematicCamera(
   settings: SynapserSceneSettings,
-  _zoomT: number,
+  zoomT: number,
 ): { position: Vec3; lookAt: Vec3; fov: number } {
+  const cfg = settings.cinematicScroll;
   const cam = settings.camera;
+  const dist = lerp(cfg.distanceFar, cfg.distanceNear, clamp01(zoomT));
+  const lookAt: Vec3 = [cam.lookAt[0], cam.lookAt[1], cam.lookAt[2]];
+  const height = cam.position[1];
+
   return {
-    position: [...cam.position] as Vec3,
-    lookAt: [...cam.lookAt] as Vec3,
+    position: [cam.position[0], height, dist],
+    lookAt,
     fov: cam.fov,
   };
 }
 
-function lerpScalar(a: number, b: number, t: number): number {
-  return a + (b - a) * t;
-}
-
-/** 0%: (0,0,-distanceFar) scale 0.1 — 20%: (0,0,0) scale 1 */
-export function getCinematicObjectTransform(
-  settings: SynapserSceneSettings,
-  zoomT: number,
-): { offset: Vec3; scale: Vec3 } {
-  const cfg = settings.cinematicScroll;
-  const t = Math.max(0, Math.min(1, zoomT));
-  const uniformScale = lerpScalar(CINEMATIC_OBJECT_SCALE_START, 1, t);
-  return {
-    offset: [0, 0, -cfg.distanceFar * (1 - t)],
-    scale: [uniformScale, uniformScale, uniformScale],
-  };
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
 }
 
 export function getSceneLocalProgress(
