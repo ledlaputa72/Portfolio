@@ -520,7 +520,7 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
             onChange={(enabled) => patch({ cinematicScroll: { ...s.cinematicScroll, enabled } })}
           />
           <TipRangeRow
-            label="원경 거리"
+            label="오브젝트 원거리"
             tip={SCENE_SETTING_TIPS.cinematicDistanceFar}
             labelWidth="w-28"
             value={s.cinematicScroll.distanceFar}
@@ -530,7 +530,7 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
             onChange={(distanceFar) => patch({ cinematicScroll: { ...s.cinematicScroll, distanceFar } })}
           />
           <TipRangeRow
-            label="근접 거리"
+            label="근접 거리 (미사용)"
             tip={SCENE_SETTING_TIPS.cinematicDistanceNear}
             labelWidth="w-28"
             value={s.cinematicScroll.distanceNear}

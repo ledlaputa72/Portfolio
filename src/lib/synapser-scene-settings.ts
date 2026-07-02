@@ -15,6 +15,7 @@ import {
   normalizeCinematicScroll,
   type CinematicEasing,
   type CinematicScrollTransition,
+  type CinematicZoomRuntime,
 } from "./synapser-cinematic-zoom";
 import type { SynapserSceneId } from "./synapser-model-store";
 import { migrateObjectMotionValue } from "./synapser-object-motion";
@@ -493,20 +494,41 @@ export function cinematicZoomT(
   return 1 - smoothstep((t - holdEnd) / (1 - holdEnd));
 }
 
+/** @deprecated camera stays fixed; use getCinematicObjectTransform */
 export function getCinematicCamera(
   settings: SynapserSceneSettings,
-  zoomT: number,
+  _zoomT: number,
 ): { position: Vec3; lookAt: Vec3; fov: number } {
+  const cam = settings.camera;
+  return {
+    position: [...cam.position] as Vec3,
+    lookAt: [...cam.lookAt] as Vec3,
+    fov: cam.fov,
+  };
+}
+
+function normalizeVec3(v: Vec3): Vec3 {
+  const len = Math.hypot(v[0], v[1], v[2]) || 1;
+  return [v[0] / len, v[1] / len, v[2] / len];
+}
+
+/** Object scale (0→1) and offset from far (camera-opposite) toward origin for cinematic zoom. */
+export function getCinematicObjectTransform(
+  settings: SynapserSceneSettings,
+  zoomT: number,
+): { scale: number; offset: Vec3 } {
   const cfg = settings.cinematicScroll;
   const cam = settings.camera;
-  const dist = lerp(cfg.distanceFar, cfg.distanceNear, zoomT);
-  const lookAt: Vec3 = [0, 0, 0];
-  const height = cam.position[1];
-
+  const t = Math.max(0, Math.min(1, zoomT));
+  const away = normalizeVec3([
+    cam.position[0] - cam.lookAt[0],
+    cam.position[1] - cam.lookAt[1],
+    cam.position[2] - cam.lookAt[2],
+  ]);
+  const dist = cfg.distanceFar * (1 - t);
   return {
-    position: [0, height, dist],
-    lookAt,
-    fov: cam.fov,
+    scale: t,
+    offset: [away[0] * dist, away[1] * dist, away[2] * dist],
   };
 }
 
@@ -550,14 +572,16 @@ export function getCinematicSceneVisibilities(
 
     if (raw <= 0) {
       result[id] =
-        globalP > start ? smoothstep(Math.min(1, (globalP - start) / (segment * CROSSFADE))) : 0;
+        globalP >= start - segment * 0.001
+          ? smoothstep(Math.min(1, (globalP - start + segment * 0.002) / (segment * CROSSFADE)))
+          : 0;
       return;
     }
 
     if (raw >= 1) {
       result[id] =
-        globalP < start + segment
-          ? smoothstep(Math.min(1, (start + segment - globalP) / (segment * CROSSFADE)))
+        globalP <= start + segment + segment * 0.001
+          ? smoothstep(Math.min(1, (start + segment - globalP + segment * 0.002) / (segment * CROSSFADE)))
           : 0;
       return;
     }
@@ -569,6 +593,39 @@ export function getCinematicSceneVisibilities(
   });
 
   return result;
+}
+
+export function getChainedSceneVisibilities(
+  sceneOrder: string[],
+  runtimes: Record<string, CinematicZoomRuntime>,
+  sceneSettings: Record<string, { cinematicScroll?: import("./synapser-cinematic-zoom").SynapserCinematicScrollSettings }>,
+  chainHead: number,
+  fallbackGlobalP: number,
+): Record<string, number> {
+  const vis = getCinematicSceneVisibilities(fallbackGlobalP, sceneOrder);
+  const headId = sceneOrder[chainHead];
+  if (!headId) return vis;
+
+  const headRuntime = runtimes[headId];
+  const headConfig = sceneSettings[headId]?.cinematicScroll;
+  if (!headRuntime || !headConfig?.enabled) return vis;
+
+  if (
+    headRuntime.phase === "zooming-in" ||
+    headRuntime.phase === "hold" ||
+    headRuntime.phase === "zooming-out"
+  ) {
+    vis[headId] = Math.max(vis[headId] ?? 0, 0.35 + headRuntime.zoomT * 0.65);
+  }
+
+  if (chainHead > 0 && headRuntime.phase === "zooming-in") {
+    const prevId = sceneOrder[chainHead - 1];
+    const blend = smoothstep(headRuntime.zoomT);
+    if (prevId) vis[prevId] = (vis[prevId] ?? 0) * (1 - blend);
+    vis[headId] = Math.max(vis[headId] ?? 0, blend);
+  }
+
+  return vis;
 }
 
 /** @deprecated use getCinematicSceneVisibilities(globalP, sceneIds) */
