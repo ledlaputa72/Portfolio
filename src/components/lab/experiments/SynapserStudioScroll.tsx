@@ -51,6 +51,7 @@ import { getObjectAnchorWorldOffset } from "@/lib/synapser-anchor-layout";
 import {
   getCinematicScrollRotation,
   tickCinematicZoomSystem,
+  type CinematicScrollState,
   type CinematicZoomRuntime,
 } from "@/lib/synapser-cinematic-zoom";
 
@@ -532,7 +533,10 @@ function ScrollWorld({
   const meshScanFrame = useRef(0);
   const smoothedPointer = useRef({ x: 0, y: 0 });
   const localChainHeadRef = useRef({ index: 0 });
-  const cinematicScrollStateRef = useRef({ prevRawGlobalP: 0 });
+  const cinematicScrollStateRef = useRef<CinematicScrollState>({
+    prevRawGlobalP: 0,
+    scrollDirection: 1,
+  });
 
   const sceneCount = sceneOrder.length;
 
