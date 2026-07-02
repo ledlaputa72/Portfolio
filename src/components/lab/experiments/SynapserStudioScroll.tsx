@@ -34,7 +34,6 @@ import { applySynapserScrollGlitch, DEFAULT_SYNAPSER_SCROLL_GLITCH, getSynapserF
 import type { SynapserScrollGlitchSettings } from "@/lib/synapser-scroll-glitch";
 import type { SynapserSceneDefinition, SynapserProceduralType } from "@/lib/synapser-project-state";
 import {
-  cinematicZoomT,
   getActiveSceneIndex,
   getCinematicCamera,
   getCinematicSceneVisibilities,
@@ -47,6 +46,14 @@ import {
   type SynapserSceneSettings,
   type SynapserTypographySettings,
 } from "@/lib/synapser-scene-settings";
+import { getObjectAnchorWorldOffset } from "@/lib/synapser-anchor-layout";
+import {
+  getCinematicZoomRuntime,
+  resetCinematicZoomRuntime,
+  resolveEffectiveGlobalProgress,
+  stepCinematicZoom,
+  type CinematicZoomRuntime,
+} from "@/lib/synapser-cinematic-zoom";
 
 /** Floor plane spans far enough that cinematic camera angles never clip edges. */
 const FLOOR_PLANE_SIZE = 20 * 100;
@@ -302,11 +309,26 @@ function AnimatedSceneContent({
   const floatGroupRef = useRef<Group>(null);
   const { pointer } = useThree();
   const floatPhase = useRef(Math.random() * Math.PI * 2);
+  const lookAtCenter = useRef(new THREE.Vector3(0, 0, 0));
 
   useFrame((state, delta) => {
     const g = groupRef.current;
     const f = floatGroupRef.current;
     if (!g) return;
+
+    const persp = state.camera as PerspectiveCamera;
+    const dist = state.camera.position.distanceTo(lookAtCenter.current);
+    const anchorOff = getObjectAnchorWorldOffset(
+      motion.anchor,
+      dist,
+      persp.fov,
+      persp.aspect,
+    );
+    g.position.set(
+      motion.groupOffset[0] + anchorOff[0],
+      motion.groupOffset[1] + anchorOff[1],
+      motion.groupOffset[2] + anchorOff[2],
+    );
 
     const autoRad = SYNAPSER_AUTO_ROTATE_MAX_RAD_PER_SEC * delta;
     g.rotation.x += motion.autoRotateX * autoRad;
@@ -335,7 +357,7 @@ function AnimatedSceneContent({
   });
 
   return (
-    <group ref={groupRef} position={motion.groupOffset} scale={motion.groupScale}>
+    <group ref={groupRef} scale={motion.groupScale}>
       {motion.floatEnabled ? <group ref={floatGroupRef}>{children}</group> : children}
     </group>
   );
@@ -440,9 +462,15 @@ function EnvironmentController({
 function ScrollWorld({
   progressRef,
   displayGlitchRef,
+  cinematicZoomRuntimesRef,
+  displayLocalProgressRef,
+  effectiveProgressRef,
 }: {
   progressRef: React.RefObject<number>;
   displayGlitchRef: React.RefObject<number>;
+  cinematicZoomRuntimesRef: React.RefObject<Record<SynapserSceneId, CinematicZoomRuntime>>;
+  displayLocalProgressRef: React.RefObject<number>;
+  effectiveProgressRef: React.RefObject<number>;
 }) {
   const { sceneList, sceneOrder, sceneSettings, scrollGlitchMap } = useSynapserModel();
   const groupRefs = useRef<Record<SynapserSceneId, React.RefObject<Group | null>>>({});
@@ -465,8 +493,38 @@ function ScrollWorld({
   };
 
   useFrame((state, delta) => {
-    const p = progressRef.current;
-    const vis = getCinematicSceneVisibilities(p, sceneOrder);
+    const rawP = progressRef.current;
+    const deltaMs = delta * 1000;
+
+    sceneOrder.forEach((id, index) => {
+      const settings = sceneSettings[id];
+      if (!settings?.cinematicScroll.enabled) return;
+      const rawLocalP = getSceneLocalProgress(rawP, index, sceneCount);
+      const weight = getCinematicSceneVisibilities(rawP, sceneOrder)[id] ?? 0;
+      const runtime = getCinematicZoomRuntime(cinematicZoomRuntimesRef.current!, id);
+      if (weight <= 0.001) {
+        if (runtime.phase !== "before-in") resetCinematicZoomRuntime(cinematicZoomRuntimesRef.current!, id);
+        return;
+      }
+      stepCinematicZoom(runtime, rawLocalP, settings.cinematicScroll, deltaMs);
+    });
+
+    const effectiveP = resolveEffectiveGlobalProgress(
+      rawP,
+      sceneOrder,
+      sceneCount,
+      sceneSettings,
+      cinematicZoomRuntimesRef.current!,
+      getActiveSceneIndex,
+    );
+    const vis = getCinematicSceneVisibilities(effectiveP, sceneOrder);
+    const activeIdx = getActiveSceneIndex(effectiveP, sceneCount);
+    const activeId = sceneOrder[activeIdx];
+    if (activeId) {
+      const activeRuntime = cinematicZoomRuntimesRef.current?.[activeId];
+      displayLocalProgressRef.current = activeRuntime?.displayLocalP ?? getSceneLocalProgress(effectiveP, activeIdx, sceneCount);
+    }
+    effectiveProgressRef.current = effectiveP;
 
     let posX = 0;
     let posY = 0;
@@ -490,7 +548,7 @@ function ScrollWorld({
       const weight = vis[id] ?? 0;
       const settings = sceneSettings[id];
       if (!settings) return;
-      const localP = getSceneLocalProgress(p, index, sceneCount);
+      const localP = getSceneLocalProgress(effectiveP, index, sceneCount);
       const groupRef = getGroupRef(id);
       if (groupRef.current) groupRef.current.scale.setScalar(weight);
 
@@ -508,7 +566,8 @@ function ScrollWorld({
 
       let sample;
       if (settings.cinematicScroll.enabled) {
-        const zoomT = cinematicZoomT(localP, settings.cinematicScroll);
+        const runtime = getCinematicZoomRuntime(cinematicZoomRuntimesRef.current!, id);
+        const zoomT = runtime.zoomT;
         sample = getCinematicCamera(settings, zoomT);
       } else if (settings.cameraAnimation.enabled) {
         let t = localP;
@@ -664,7 +723,7 @@ function ScrollWorld({
   return (
     <>
       <EnvironmentController
-        progressRef={progressRef}
+        progressRef={effectiveProgressRef}
         sceneOrder={sceneOrder}
         sceneSettings={sceneSettings}
       />
@@ -681,14 +740,14 @@ function ScrollWorld({
             <SceneLights
               sceneId={def.id}
               lighting={settings.lighting}
-              progressRef={progressRef}
+              progressRef={effectiveProgressRef}
               sceneOrder={sceneOrder}
             />
             <SceneObject
               sceneId={def.id}
               procedural={<SceneProcedural type={def.procedural} />}
               displayGlitchRef={displayGlitchRef}
-              progressRef={progressRef}
+              progressRef={effectiveProgressRef}
               scrollGlitch={scrollGlitchMap[def.id] ?? scrollGlitchMap[sceneOrder[0]]}
               objectHoverRef={objectHoverRef}
             />
@@ -742,7 +801,8 @@ function SceneTypography({
       className={layout.container}
       style={{
         opacity,
-        transform: layout.transform,
+        ...layout.anchorStyle,
+        transitionProperty: "color, text-shadow, transform, opacity, left, top",
       }}
     >
       <p
@@ -767,6 +827,9 @@ function SceneTypography({
 export default function SynapserStudioScroll() {
   const { sceneSettings, sceneList, sceneOrder, scrollGlitchMap } = useSynapserModel();
   const progressRef = useRef(0);
+  const effectiveProgressRef = useRef(0);
+  const displayLocalProgressRef = useRef(0);
+  const cinematicZoomRuntimesRef = useRef<Record<SynapserSceneId, CinematicZoomRuntime>>({});
   const glitchRef = useRef(0);
   const displayGlitchRef = useRef(0);
   const prevSceneRef = useRef(0);
@@ -796,7 +859,18 @@ export default function SynapserStudioScroll() {
       setter((prev) => (Math.abs(prev - next) < 0.002 ? prev : next));
     };
     const tick = () => {
-      const idx = sceneIndexRef.current;
+      const effectiveP = effectiveProgressRef.current;
+      const idx = getActiveSceneIndex(effectiveP, sceneCount);
+      sceneIndexRef.current = idx;
+      setSceneIndex((prev) => (prev === idx ? prev : idx));
+
+      const nextPercent = Math.round(displayLocalProgressRef.current * 100);
+      setSceneLocalPercent((prev) => (prev === nextPercent ? prev : nextPercent));
+
+      const local = displayLocalProgressRef.current;
+      const fadeEdge = local < 0.08 ? local / 0.08 : local > 0.92 ? (1 - local) / 0.08 : 1;
+      setTypoOpacity((prev) => (Math.abs(prev - fadeEdge) < 0.001 ? prev : fadeEdge));
+
       const sceneId = sceneOrder[idx] ?? sceneOrder[0];
       const scrollGlitch =
         (sceneId ? scrollGlitchMap[sceneId] : undefined) ??
@@ -828,11 +902,12 @@ export default function SynapserStudioScroll() {
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [scrollGlitchMap, sceneOrder]);
+  }, [scrollGlitchMap, sceneOrder, sceneCount]);
 
   const handleProgress = useCallback(
     (p: number) => {
       progressRef.current = p;
+      effectiveProgressRef.current = p;
 
       const idx = getActiveSceneIndex(p, sceneCount);
       const sceneId = sceneOrder[idx] ?? sceneOrder[0];
@@ -853,14 +928,9 @@ export default function SynapserStudioScroll() {
           : idx;
       prevSceneRef.current = nextIdx;
       prevProgressRef.current = p;
-      sceneIndexRef.current = nextIdx;
 
-      setSceneIndex((prev) => (prev === nextIdx ? prev : nextIdx));
-      const local = getSceneLocalProgress(p, nextIdx, sceneCount);
-      const nextPercent = Math.round(local * 100);
-      setSceneLocalPercent((prev) => (prev === nextPercent ? prev : nextPercent));
-      const fadeEdge = local < 0.08 ? local / 0.08 : local > 0.92 ? (1 - local) / 0.08 : 1;
-      setTypoOpacity((prev) => (Math.abs(prev - fadeEdge) < 0.001 ? prev : fadeEdge));
+      const scrollIdx = getActiveSceneIndex(effectiveProgressRef.current, sceneCount);
+      sceneIndexRef.current = scrollIdx;
     },
     [scrollGlitchMap, sceneOrder, sceneCount],
   );
@@ -871,7 +941,7 @@ export default function SynapserStudioScroll() {
       onProgress={handleProgress}
       scrollHeightVh={400}
       stickyClassName="bg-[#0f0c0a] text-[#f0ebe3]"
-      hint="↓ 스크롤 — 원거리에서 줌인 · 유지 · 줌아웃 후 씬 전환"
+      hint="↓ 스크롤 — 진입 시 자동 줌인 · 유지 · 80% 이후 자동 줌아웃·씬 전환"
       progressLabel="Scene Progress"
       showProgress={false}
     >
@@ -885,7 +955,13 @@ export default function SynapserStudioScroll() {
         }}
         dpr={[1, 2]}
       >
-        <ScrollWorld progressRef={progressRef} displayGlitchRef={displayGlitchRef} />
+        <ScrollWorld
+          progressRef={progressRef}
+          displayGlitchRef={displayGlitchRef}
+          cinematicZoomRuntimesRef={cinematicZoomRuntimesRef}
+          displayLocalProgressRef={displayLocalProgressRef}
+          effectiveProgressRef={effectiveProgressRef}
+        />
       </Canvas>
 
       {activeScrollGlitch ? (

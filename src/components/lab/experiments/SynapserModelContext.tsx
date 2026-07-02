@@ -30,7 +30,11 @@ import {
   type SynapserSceneDefinition,
   type SynapserSceneId,
 } from "@/lib/synapser-project-state";
-import { mergeSceneSettings, type SynapserSceneSettings } from "@/lib/synapser-scene-settings";
+import {
+  applySceneSettingsPatch,
+  mergeSceneSettings,
+  type SynapserSceneSettings,
+} from "@/lib/synapser-scene-settings";
 import {
   DEFAULT_SYNAPSER_SCROLL_GLITCH,
   mergeScrollGlitchPatch,
@@ -100,15 +104,21 @@ export function useSynapserModel() {
 
 export { DEFAULT_SCENE_DEFINITIONS as SYNAPSER_SCENES } from "@/lib/synapser-project-state";
 
+function readInitialProjectState(): SynapserProjectState {
+  return typeof window !== "undefined" ? readSynapserProjectState() : createDefaultProjectState();
+}
+
 export function SynapserModelProvider({ children }: { children: ReactNode }) {
-  const [projectState, setProjectState] = useState<SynapserProjectState>(createDefaultProjectState);
+  const [projectState, setProjectState] = useState<SynapserProjectState>(readInitialProjectState);
   const [selectedScene, setSelectedScene] = useState<SynapserSceneId>("manifesto");
   const [scenes, setScenes] = useState<Record<SynapserSceneId, SceneModelState>>(() =>
-    createEmptyScenes(createDefaultProjectState().sceneOrder),
+    createEmptyScenes(readInitialProjectState().sceneOrder),
   );
   const [settingsDirty, setSettingsDirty] = useState(false);
   const [loading, setLoading] = useState(true);
   const urlRefs = useRef<Partial<Record<SynapserSceneId, string>>>({});
+  const loadingRef = useRef(true);
+  const settingsTouchedRef = useRef(false);
 
   const sceneList = useMemo(() => getSceneList(projectState), [projectState]);
   const sceneOrder = projectState.sceneOrder;
@@ -161,9 +171,10 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
 
   const hydrate = useCallback(async () => {
     setLoading(true);
+    loadingRef.current = true;
     revokeAllUrls();
     const state = readSynapserProjectState();
-    setProjectState(state);
+    setProjectState((prev) => (settingsTouchedRef.current ? prev : state));
     setSelectedScene((prev) => (state.sceneOrder.includes(prev) ? prev : state.sceneOrder[0]));
     const stored = await hydrateSynapserSceneModels(state.sceneOrder);
     const next = createEmptyScenes(state.sceneOrder);
@@ -183,8 +194,9 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
       }
     }
     setScenes(next);
-    setSettingsDirty(false);
+    if (!settingsTouchedRef.current) setSettingsDirty(false);
     setLoading(false);
+    loadingRef.current = false;
   }, [revokeAllUrls]);
 
   useEffect(() => {
@@ -263,6 +275,7 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
       sceneId: SynapserSceneId,
       patch: Partial<SynapserSceneSettings> | ((prev: SynapserSceneSettings) => SynapserSceneSettings),
     ) => {
+      settingsTouchedRef.current = true;
       setProjectState((prev) => {
         const current = prev.settings[sceneId];
         if (!current) return prev;
@@ -270,7 +283,7 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
         const next =
           typeof patch === "function"
             ? mergeSceneSettings(patch(base))
-            : mergeSceneSettings({ ...base, ...patch });
+            : applySceneSettingsPatch(base, patch);
         return {
           ...prev,
           settings: { ...prev.settings, [sceneId]: next },
@@ -282,12 +295,18 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
   );
 
   const saveSceneSettings = useCallback(() => {
-    writeSynapserProjectState(projectState);
+    if (loadingRef.current) return;
+    setProjectState((current) => {
+      writeSynapserProjectState(current);
+      return current;
+    });
     setSettingsDirty(false);
-  }, [projectState]);
+    settingsTouchedRef.current = false;
+  }, []);
 
   const patchScrollGlitch = useCallback(
     (patch: Partial<SynapserScrollGlitchSettings>) => {
+      settingsTouchedRef.current = true;
       setProjectState((prev) => {
         const current =
           prev.scrollGlitch[selectedScene] ??
@@ -307,11 +326,13 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
   );
 
   const resetScrollGlitch = useCallback(() => {
+    settingsTouchedRef.current = true;
     setProjectState((prev) => resetSceneBundle(prev, selectedScene));
     setSettingsDirty(true);
   }, [selectedScene]);
 
   const resetSceneSettings = useCallback((sceneId?: SynapserSceneId) => {
+    settingsTouchedRef.current = true;
     const target = sceneId ?? selectedScene;
     setProjectState((prev) => resetSceneBundle(prev, target));
     setSettingsDirty(true);

@@ -1,7 +1,29 @@
+import {
+  DEFAULT_OBJECT_ANCHOR,
+  DEFAULT_TYPOGRAPHY_ANCHOR,
+  getSynapserTypographyAnchorStyle,
+  getSynapserTypographyTextAlign,
+  normalizeSynapserAnchor,
+  type SynapserAnchorAlignX,
+  type SynapserAnchorAlignY,
+  type SynapserAnchorSettings,
+} from "./synapser-anchor-layout";
+import {
+  DEFAULT_CINEMATIC_ZOOM_IN,
+  DEFAULT_CINEMATIC_ZOOM_OUT,
+  normalizeCinematicScroll,
+  type CinematicEasing,
+  type CinematicScrollTransition,
+} from "./synapser-cinematic-zoom";
 import type { SynapserSceneId } from "./synapser-model-store";
 import { migrateObjectMotionValue } from "./synapser-object-motion";
 
+export type { CinematicEasing, CinematicScrollTransition };
+export { normalizeCinematicScroll };
+
 export type { SynapserSceneId };
+
+export type { SynapserAnchorAlignX, SynapserAnchorAlignY, SynapserAnchorSettings };
 
 export type Vec3 = [number, number, number];
 
@@ -22,13 +44,11 @@ export type SynapserCameraKeyframe = {
   fov: number;
 };
 
-export type SynapserTypographyAlignX = "left" | "center" | "right";
-export type SynapserTypographyAlignY = "top" | "middle" | "bottom";
+export type SynapserTypographyAlignX = SynapserAnchorAlignX;
+export type SynapserTypographyAlignY = SynapserAnchorAlignY;
 
-export type SynapserTypographySettings = {
-  alignX: SynapserTypographyAlignX;
-  alignY: SynapserTypographyAlignY;
-};
+export type SynapserTypographySettings = SynapserAnchorSettings;
+export type SynapserObjectAnchorSettings = SynapserAnchorSettings;
 
 export type SynapserSceneSettings = {
   lighting: {
@@ -58,6 +78,8 @@ export type SynapserSceneSettings = {
     groupScale: number;
     pointerTiltX: number;
     pointerTiltY: number;
+    /** Screen anchor — object center aligns to this 3×3 grid point. */
+    anchor: SynapserObjectAnchorSettings;
   };
   camera: {
     fov: number;
@@ -93,8 +115,12 @@ export type SynapserSceneSettings = {
     enabled: boolean;
     distanceFar: number;
     distanceNear: number;
+    /** @deprecated use autoZoomIn.end */
     zoomInEnd: number;
+    /** @deprecated use autoZoomOut.start */
     holdEnd: number;
+    autoZoomIn: CinematicScrollTransition;
+    autoZoomOut: CinematicScrollTransition;
   };
   typography: SynapserTypographySettings;
 };
@@ -125,10 +151,7 @@ function cloneLights(): SynapserLightConfig[] {
   return BASE_LIGHTS.map((l) => ({ ...l, position: [...l.position] as Vec3 }));
 }
 
-const DEFAULT_TYPOGRAPHY: SynapserTypographySettings = {
-  alignX: "left",
-  alignY: "bottom",
-};
+const DEFAULT_TYPOGRAPHY: SynapserTypographySettings = { ...DEFAULT_TYPOGRAPHY_ANCHOR };
 
 export function sceneDefaults(
   overrides: {
@@ -169,6 +192,7 @@ export function sceneDefaults(
       groupScale: 1,
       pointerTiltX: 0.001,
       pointerTiltY: 0.002,
+      anchor: { ...DEFAULT_OBJECT_ANCHOR },
     },
     camera: {
       fov: 45,
@@ -196,13 +220,13 @@ export function sceneDefaults(
         { at: 1, position: [2.2, 2.1, 4.2], lookAt: [0, 0, 0], fov: 45 },
       ],
     },
-    cinematicScroll: {
+    cinematicScroll: normalizeCinematicScroll({
       enabled: true,
       distanceFar: 10,
       distanceNear: 4,
-      zoomInEnd: 0.38,
-      holdEnd: 0.62,
-    },
+      autoZoomIn: { ...DEFAULT_CINEMATIC_ZOOM_IN },
+      autoZoomOut: { ...DEFAULT_CINEMATIC_ZOOM_OUT },
+    }),
     typography: { ...DEFAULT_TYPOGRAPHY },
   };
 
@@ -217,10 +241,10 @@ export function sceneDefaults(
       keyframes:
         overrides.cameraAnimation?.keyframes ?? base.cameraAnimation.keyframes,
     },
-    cinematicScroll: {
+    cinematicScroll: normalizeCinematicScroll({
       ...base.cinematicScroll,
       ...overrides.cinematicScroll,
-    },
+    }),
     typography: { ...base.typography, ...overrides.typography },
   };
 }
@@ -265,13 +289,60 @@ function normalizeObjectMotion(
     autoRotateX: migrateObjectMotionValue("autoRotateX", merged.autoRotateX),
     autoRotateY: migrateObjectMotionValue("autoRotateY", merged.autoRotateY),
     autoRotateZ: migrateObjectMotionValue("autoRotateZ", merged.autoRotateZ),
+    anchor: normalizeSynapserAnchor(motion.anchor, defaults.anchor),
+  };
+}
+
+/** Deep-merge a partial patch onto existing scene settings (preserves nested arrays). */
+export function applySceneSettingsPatch(
+  base: SynapserSceneSettings,
+  patch: Partial<SynapserSceneSettings>,
+): SynapserSceneSettings {
+  return {
+    lighting: patch.lighting
+      ? {
+          ...base.lighting,
+          ...patch.lighting,
+          lights: patch.lighting.lights ?? base.lighting.lights,
+        }
+      : base.lighting,
+    background: patch.background ? { ...base.background, ...patch.background } : base.background,
+    objectMotion: patch.objectMotion
+      ? {
+          ...normalizeObjectMotion({ ...base.objectMotion, ...patch.objectMotion }, base.objectMotion),
+          anchor: patch.objectMotion.anchor
+            ? normalizeSynapserAnchor(
+                { ...base.objectMotion.anchor, ...patch.objectMotion.anchor },
+                base.objectMotion.anchor,
+              )
+            : base.objectMotion.anchor,
+        }
+      : base.objectMotion,
+    camera: patch.camera ? { ...base.camera, ...patch.camera } : base.camera,
+    cameraAnimation: patch.cameraAnimation
+      ? {
+          ...base.cameraAnimation,
+          ...patch.cameraAnimation,
+          keyframes: patch.cameraAnimation.keyframes ?? base.cameraAnimation.keyframes,
+        }
+      : base.cameraAnimation,
+    cinematicScroll: patch.cinematicScroll
+      ? normalizeCinematicScroll({ ...base.cinematicScroll, ...patch.cinematicScroll })
+      : base.cinematicScroll,
+    typography: patch.typography
+      ? normalizeSynapserTypography({ ...base.typography, ...patch.typography })
+      : base.typography,
   };
 }
 
 export function mergeSceneSettings(partial: Partial<SynapserSceneSettings>): SynapserSceneSettings {
   const defaults = sceneDefaults();
   return {
-    lighting: { ...defaults.lighting, ...partial.lighting, lights: partial.lighting?.lights ?? defaults.lighting.lights },
+    lighting: {
+      ...defaults.lighting,
+      ...partial.lighting,
+      lights: partial.lighting?.lights ?? defaults.lighting.lights,
+    },
     background: { ...defaults.background, ...partial.background },
     objectMotion: normalizeObjectMotion(partial.objectMotion ?? {}, defaults.objectMotion),
     camera: { ...defaults.camera, ...partial.camera },
@@ -280,7 +351,10 @@ export function mergeSceneSettings(partial: Partial<SynapserSceneSettings>): Syn
       ...partial.cameraAnimation,
       keyframes: partial.cameraAnimation?.keyframes ?? defaults.cameraAnimation.keyframes,
     },
-    cinematicScroll: { ...defaults.cinematicScroll, ...partial.cinematicScroll },
+    cinematicScroll: normalizeCinematicScroll({
+      ...defaults.cinematicScroll,
+      ...partial.cinematicScroll,
+    }),
     typography: normalizeSynapserTypography(partial.typography),
   };
 }
@@ -288,47 +362,28 @@ export function mergeSceneSettings(partial: Partial<SynapserSceneSettings>): Syn
 export function normalizeSynapserTypography(
   typography?: Partial<SynapserTypographySettings> | null,
 ): SynapserTypographySettings {
-  return { ...DEFAULT_TYPOGRAPHY, ...typography };
+  return normalizeSynapserAnchor(typography, DEFAULT_TYPOGRAPHY);
 }
 
 export function getSynapserTypographyLayoutClasses(
   typography?: Partial<SynapserTypographySettings> | null,
-): { container: string; body: string; transform?: string } {
+): {
+  container: string;
+  body: string;
+  anchorStyle: ReturnType<typeof getSynapserTypographyAnchorStyle>;
+} {
   const t = normalizeSynapserTypography(typography);
-  const horizontal =
-    t.alignX === "left"
-      ? "left-6 sm:left-14 right-auto"
-      : t.alignX === "right"
-        ? "right-6 sm:right-14 left-auto"
-        : "left-1/2 right-auto";
-
-  const vertical =
-    t.alignY === "top"
-      ? "top-20 sm:top-24 bottom-auto"
-      : t.alignY === "middle"
-        ? "top-1/2 bottom-auto"
-        : "bottom-28 top-auto";
-
-  const text =
-    t.alignX === "left"
-      ? "text-left items-start"
-      : t.alignX === "right"
-        ? "text-right items-end"
-        : "text-center items-center";
-
-  const transforms: string[] = [];
-  if (t.alignX === "center") transforms.push("translateX(-50%)");
-  if (t.alignY === "middle") transforms.push("translateY(-50%)");
+  const textAlign = getSynapserTypographyTextAlign(t);
 
   return {
-    container: `pointer-events-none absolute z-10 flex flex-col px-8 sm:px-14 ${horizontal} ${vertical} ${text}`,
+    container: `pointer-events-none absolute z-10 flex flex-col px-4 sm:px-6 ${textAlign}`,
     body:
       t.alignX === "center"
         ? "mx-auto max-w-md"
         : t.alignX === "right"
           ? "ml-auto max-w-md"
           : "max-w-md",
-    transform: transforms.length > 0 ? transforms.join(" ") : undefined,
+    anchorStyle: getSynapserTypographyAnchorStyle(t),
   };
 }
 
@@ -414,14 +469,14 @@ export function smoothstep(t: number) {
   return x * x * (3 - 2 * x);
 }
 
-/** 0 = far from target, 1 = near to target */
+/** @deprecated use stepCinematicZoom + runtime zoomT */
 export function cinematicZoomT(
   localT: number,
   config: SynapserSceneSettings["cinematicScroll"],
 ): number {
   const t = Math.max(0, Math.min(1, localT));
-  const zoomInEnd = config.zoomInEnd;
-  const holdEnd = config.holdEnd;
+  const zoomInEnd = config.autoZoomIn?.end ?? config.zoomInEnd;
+  const holdEnd = config.autoZoomOut?.start ?? config.holdEnd;
 
   if (t < zoomInEnd) {
     return smoothstep(t / zoomInEnd);

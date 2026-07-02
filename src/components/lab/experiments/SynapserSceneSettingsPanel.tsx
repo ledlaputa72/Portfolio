@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { useSynapserModel } from "./SynapserModelContext";
 import SynapserColorPicker from "./SynapserColorPicker";
+import SynapserAnchorGrid from "./SynapserAnchorGrid";
 import {
   SettingTip,
   TipCheckboxRow,
   TipField,
   TipRangeRow,
   TipSection,
-  TipSegmentRow,
 } from "./SynapserSettingControls";
 import { SCENE_SETTING_TIPS } from "./synapser-setting-tips";
 import {
@@ -17,8 +17,7 @@ import {
   type SynapserCameraKeyframe,
   type SynapserLightConfig,
   type SynapserSceneSettings,
-  type SynapserTypographyAlignX,
-  type SynapserTypographyAlignY,
+  type CinematicEasing,
   type Vec3,
 } from "@/lib/synapser-scene-settings";
 
@@ -246,6 +245,7 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
     sceneList,
     activeSceneSettings: s,
     settingsDirty,
+    loading,
     patchSceneSettings,
     saveSceneSettings,
     resetSceneSettings,
@@ -255,6 +255,7 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
     lighting: !compact,
     background: false,
     motion: false,
+    scrollZoom: false,
     camera: false,
     cameraAnim: false,
     typography: !compact,
@@ -285,8 +286,9 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
           <SettingTip tip={SCENE_SETTING_TIPS.save}>
             <button
               type="button"
+              disabled={loading}
               onClick={saveSceneSettings}
-              className="cursor-help rounded-full border border-[#6b8cce]/40 px-4 py-2 text-xs uppercase tracking-wider text-[#f0ebe3] transition-colors hover:border-[#6b8cce]"
+              className="cursor-help rounded-full border border-[#6b8cce]/40 px-4 py-2 text-xs uppercase tracking-wider text-[#f0ebe3] transition-colors hover:border-[#6b8cce] disabled:cursor-not-allowed disabled:opacity-40"
             >
               저장
             </button>
@@ -406,6 +408,12 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
           open={open.motion}
           onToggle={() => toggle("motion")}
         >
+          <SynapserAnchorGrid
+            label="모델 위치"
+            tip={SCENE_SETTING_TIPS.objectAnchor}
+            value={s.objectMotion.anchor}
+            onChange={(anchor) => patch({ objectMotion: { ...s.objectMotion, anchor } })}
+          />
           <TipCheckboxRow
             label="Float 활성화"
             tip={SCENE_SETTING_TIPS.floatEnabled}
@@ -488,6 +496,192 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
             step={0.05}
             onChange={(groupScale) => patch({ objectMotion: { ...s.objectMotion, groupScale } })}
           />
+        </TipSection>
+
+        <TipSection
+          title="스크롤 줌 전환 (Scroll Zoom)"
+          tip={SCENE_SETTING_TIPS.sectionScrollZoom}
+          open={open.scrollZoom}
+          onToggle={() => toggle("scrollZoom")}
+        >
+          <TipCheckboxRow
+            label="시네마틱 줌"
+            tip={SCENE_SETTING_TIPS.cinematicEnabled}
+            checked={s.cinematicScroll.enabled}
+            onChange={(enabled) => patch({ cinematicScroll: { ...s.cinematicScroll, enabled } })}
+          />
+          <TipRangeRow
+            label="원경 거리"
+            tip={SCENE_SETTING_TIPS.cinematicDistanceFar}
+            labelWidth="w-28"
+            value={s.cinematicScroll.distanceFar}
+            min={2}
+            max={24}
+            step={0.5}
+            onChange={(distanceFar) => patch({ cinematicScroll: { ...s.cinematicScroll, distanceFar } })}
+          />
+          <TipRangeRow
+            label="근접 거리"
+            tip={SCENE_SETTING_TIPS.cinematicDistanceNear}
+            labelWidth="w-28"
+            value={s.cinematicScroll.distanceNear}
+            min={1}
+            max={16}
+            step={0.25}
+            onChange={(distanceNear) => patch({ cinematicScroll: { ...s.cinematicScroll, distanceNear } })}
+          />
+
+          <p className="pt-2 font-mono text-[9px] uppercase tracking-[0.25em] text-[#c9a66b]/70">
+            자동 줌 인
+          </p>
+          <TipRangeRow
+            label="시작 %"
+            tip={SCENE_SETTING_TIPS.zoomInStart}
+            labelWidth="w-28"
+            value={Math.round(s.cinematicScroll.autoZoomIn.start * 100)}
+            min={0}
+            max={50}
+            step={1}
+            onChange={(v) =>
+              patch({
+                cinematicScroll: {
+                  ...s.cinematicScroll,
+                  autoZoomIn: { ...s.cinematicScroll.autoZoomIn, start: v / 100 },
+                },
+              })
+            }
+          />
+          <TipRangeRow
+            label="끝 %"
+            tip={SCENE_SETTING_TIPS.zoomInEnd}
+            labelWidth="w-28"
+            value={Math.round(s.cinematicScroll.autoZoomIn.end * 100)}
+            min={5}
+            max={60}
+            step={1}
+            onChange={(v) =>
+              patch({
+                cinematicScroll: {
+                  ...s.cinematicScroll,
+                  autoZoomIn: { ...s.cinematicScroll.autoZoomIn, end: v / 100 },
+                },
+              })
+            }
+          />
+          <TipRangeRow
+            label="전환 시간"
+            tip={SCENE_SETTING_TIPS.zoomInDuration}
+            labelWidth="w-28"
+            value={s.cinematicScroll.autoZoomIn.durationMs}
+            min={16}
+            max={3000}
+            step={10}
+            onChange={(durationMs) =>
+              patch({
+                cinematicScroll: {
+                  ...s.cinematicScroll,
+                  autoZoomIn: { ...s.cinematicScroll.autoZoomIn, durationMs },
+                },
+              })
+            }
+          />
+          <TipField label="모션" tip={SCENE_SETTING_TIPS.zoomInEasing}>
+            <select
+              value={s.cinematicScroll.autoZoomIn.easing}
+              onChange={(e) =>
+                patch({
+                  cinematicScroll: {
+                    ...s.cinematicScroll,
+                    autoZoomIn: {
+                      ...s.cinematicScroll.autoZoomIn,
+                      easing: e.target.value as CinematicEasing,
+                    },
+                  },
+                })
+              }
+              className="mt-1 w-full rounded-lg border border-[#2a2520] bg-[#0f0c0a] px-3 py-2 text-sm text-[#f0ebe3] outline-none transition-colors focus:border-[#c9a66b]/50"
+            >
+              <option value="linear">직선 (균일)</option>
+              <option value="ease-in">완만히 시작 · 빠르게 끝</option>
+              <option value="ease-out">빠르게 시작 · 완만히 끝</option>
+            </select>
+          </TipField>
+
+          <p className="pt-2 font-mono text-[9px] uppercase tracking-[0.25em] text-[#c9a66b]/70">
+            자동 줌 아웃
+          </p>
+          <TipRangeRow
+            label="시작 %"
+            tip={SCENE_SETTING_TIPS.zoomOutStart}
+            labelWidth="w-28"
+            value={Math.round(s.cinematicScroll.autoZoomOut.start * 100)}
+            min={40}
+            max={95}
+            step={1}
+            onChange={(v) =>
+              patch({
+                cinematicScroll: {
+                  ...s.cinematicScroll,
+                  autoZoomOut: { ...s.cinematicScroll.autoZoomOut, start: v / 100 },
+                },
+              })
+            }
+          />
+          <TipRangeRow
+            label="끝 %"
+            tip={SCENE_SETTING_TIPS.zoomOutEnd}
+            labelWidth="w-28"
+            value={Math.round(s.cinematicScroll.autoZoomOut.end * 100)}
+            min={80}
+            max={100}
+            step={1}
+            onChange={(v) =>
+              patch({
+                cinematicScroll: {
+                  ...s.cinematicScroll,
+                  autoZoomOut: { ...s.cinematicScroll.autoZoomOut, end: v / 100 },
+                },
+              })
+            }
+          />
+          <TipRangeRow
+            label="전환 시간"
+            tip={SCENE_SETTING_TIPS.zoomOutDuration}
+            labelWidth="w-28"
+            value={s.cinematicScroll.autoZoomOut.durationMs}
+            min={16}
+            max={3000}
+            step={10}
+            onChange={(durationMs) =>
+              patch({
+                cinematicScroll: {
+                  ...s.cinematicScroll,
+                  autoZoomOut: { ...s.cinematicScroll.autoZoomOut, durationMs },
+                },
+              })
+            }
+          />
+          <TipField label="모션" tip={SCENE_SETTING_TIPS.zoomOutEasing}>
+            <select
+              value={s.cinematicScroll.autoZoomOut.easing}
+              onChange={(e) =>
+                patch({
+                  cinematicScroll: {
+                    ...s.cinematicScroll,
+                    autoZoomOut: {
+                      ...s.cinematicScroll.autoZoomOut,
+                      easing: e.target.value as CinematicEasing,
+                    },
+                  },
+                })
+              }
+              className="mt-1 w-full rounded-lg border border-[#2a2520] bg-[#0f0c0a] px-3 py-2 text-sm text-[#f0ebe3] outline-none transition-colors focus:border-[#c9a66b]/50"
+            >
+              <option value="linear">직선 (균일)</option>
+              <option value="ease-in">완만히 시작 · 빠르게 끝</option>
+              <option value="ease-out">빠르게 시작 · 완만히 끝</option>
+            </select>
+          </TipField>
         </TipSection>
 
         <TipSection
@@ -626,31 +820,11 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
           open={open.typography}
           onToggle={() => toggle("typography")}
         >
-          <TipSegmentRow<SynapserTypographyAlignX>
-            label="좌우"
-            tip={SCENE_SETTING_TIPS.typographyAlignX}
-            value={s.typography?.alignX ?? "left"}
-            options={[
-              { id: "left", label: "좌" },
-              { id: "center", label: "중" },
-              { id: "right", label: "우" },
-            ]}
-            onChange={(alignX) =>
-              patch({ typography: { ...(s.typography ?? { alignX: "left", alignY: "bottom" }), alignX } })
-            }
-          />
-          <TipSegmentRow<SynapserTypographyAlignY>
-            label="상중하"
-            tip={SCENE_SETTING_TIPS.typographyAlignY}
-            value={s.typography?.alignY ?? "bottom"}
-            options={[
-              { id: "top", label: "상" },
-              { id: "middle", label: "중" },
-              { id: "bottom", label: "하" },
-            ]}
-            onChange={(alignY) =>
-              patch({ typography: { ...(s.typography ?? { alignX: "left", alignY: "bottom" }), alignY } })
-            }
+          <SynapserAnchorGrid
+            label="타이틀 위치"
+            tip={SCENE_SETTING_TIPS.typographyAnchor}
+            value={s.typography}
+            onChange={(typography) => patch({ typography })}
           />
         </TipSection>
 

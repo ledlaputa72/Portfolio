@@ -149,6 +149,7 @@ export default function SynapserScrollGlitchSettings() {
   const {
     scrollGlitch,
     settingsDirty,
+    loading,
     patchScrollGlitch,
     saveSceneSettings,
     resetScrollGlitch,
@@ -174,8 +175,9 @@ export default function SynapserScrollGlitchSettings() {
           <SettingTip tip={TIPS.save}>
             <button
               type="button"
+              disabled={loading}
               onClick={saveSceneSettings}
-              className="cursor-help rounded-full border border-[#ff0066]/40 px-4 py-2 text-xs uppercase tracking-wider text-[#f0ebe3] transition-colors hover:border-[#ff0066]"
+              className="cursor-help rounded-full border border-[#ff0066]/40 px-4 py-2 text-xs uppercase tracking-wider text-[#f0ebe3] transition-colors hover:border-[#ff0066] disabled:cursor-not-allowed disabled:opacity-40"
             >
               저장
             </button>
