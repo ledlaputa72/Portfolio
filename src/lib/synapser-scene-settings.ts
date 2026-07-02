@@ -545,6 +545,16 @@ export function getSynapserSceneVisibilities(
   return getCinematicSceneVisibilities(globalP, sceneIds);
 }
 
+export function applySynapserSceneGroupScales(
+  sceneIds: string[],
+  vis: Record<string, number>,
+  setScale: (sceneId: string, weight: number) => void,
+): void {
+  for (const id of sceneIds) {
+    setScale(id, vis[id] ?? 0);
+  }
+}
+
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }

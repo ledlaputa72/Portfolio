@@ -4,6 +4,7 @@ import {
   useCallback,
   createRef,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -38,6 +39,7 @@ import {
   getActiveSceneIndex,
   getCinematicCamera,
   getSynapserSceneVisibilities,
+  applySynapserSceneGroupScales,
   getSceneLocalProgress,
   getSynapserTypographyLayoutClasses,
   normalizeSynapserTypography,
@@ -238,7 +240,7 @@ function SceneLights({
   const ambientRef = useRef<THREE.AmbientLight>(null);
   const lightRefs = useRef<(THREE.Light | null)[]>([]);
 
-  useFrame(() => {
+  const syncLightVisibility = useCallback(() => {
     const visibility =
       getSynapserSceneVisibilities(progressRef.current, sceneOrder, sceneSettings)[sceneId] ?? 0;
     if (ambientRef.current) {
@@ -251,6 +253,14 @@ function SceneLights({
       obj.visible = light.enabled && visibility > 0.001;
       obj.intensity = light.intensity * visibility;
     });
+  }, [lighting, progressRef, sceneId, sceneOrder, sceneSettings]);
+
+  useLayoutEffect(() => {
+    syncLightVisibility();
+  }, [syncLightVisibility]);
+
+  useFrame(() => {
+    syncLightVisibility();
   });
 
   return (
@@ -441,7 +451,36 @@ function EnvironmentController({
   const { scene, gl } = useThree();
   const fogRef = useRef<THREE.Fog | null>(null);
 
+  const applyActiveBackground = useCallback(() => {
+    const rawP = progressRef.current;
+    const activeIdx = getActiveSceneIndex(rawP, sceneOrder.length);
+    const activeId = sceneOrder[activeIdx];
+    const active = activeId ? sceneSettings[activeId] : undefined;
+
+    if (active?.cinematicScroll?.enabled) {
+      const bg = active.background;
+      gl.setClearColor(bg.canvasColor);
+      if (bg.fogEnabled) {
+        if (!fogRef.current) fogRef.current = new THREE.Fog(bg.fogColor, bg.fogNear, bg.fogFar);
+        fogRef.current.color.set(bg.fogColor);
+        fogRef.current.near = bg.fogNear;
+        fogRef.current.far = bg.fogFar;
+        scene.fog = fogRef.current;
+      } else {
+        scene.fog = null;
+      }
+      return true;
+    }
+    return false;
+  }, [gl, progressRef, scene, sceneOrder, sceneSettings]);
+
+  useLayoutEffect(() => {
+    applyActiveBackground();
+  }, [applyActiveBackground]);
+
   useFrame(() => {
+    if (applyActiveBackground()) return;
+
     const vis = getSynapserSceneVisibilities(progressRef.current, sceneOrder, sceneSettings);
     const canvasColor = blendHex(
       sceneOrder.map((id) => ({
@@ -521,6 +560,38 @@ function ScrollWorld({
     return groupRefs.current[id];
   };
 
+  const applyGroupScales = useCallback(
+    (rawP: number) => {
+      const vis = getSynapserSceneVisibilities(rawP, sceneOrder, sceneSettings);
+      applySynapserSceneGroupScales(sceneOrder, vis, (id, weight) => {
+        const groupRef = getGroupRef(id);
+        if (groupRef.current) groupRef.current.scale.setScalar(weight);
+      });
+    },
+    [sceneOrder, sceneSettings],
+  );
+
+  useLayoutEffect(() => {
+    applyGroupScales(progressRef.current);
+    const activeIdx = getActiveSceneIndex(progressRef.current, sceneCount);
+    const activeId = sceneOrder[activeIdx];
+    const activeSettings = activeId ? sceneSettings[activeId] : undefined;
+    if (activeSettings?.cinematicScroll.enabled) {
+      const sample = getCinematicCamera(activeSettings, 0);
+      cameraEye.current.set(sample.position[0], sample.position[1], sample.position[2]);
+      cameraForward.current.set(sample.forward[0], sample.forward[1], sample.forward[2]);
+      lookAtTarget.current.copy(cameraEye.current).add(cameraForward.current);
+      camera.position.copy(cameraEye.current);
+      camera.up.set(0, 1, 0);
+      camera.lookAt(lookAtTarget.current);
+      const persp = camera as PerspectiveCamera;
+      persp.fov = sample.fov;
+      persp.near = activeSettings.camera.near;
+      persp.far = activeSettings.camera.far;
+      persp.updateProjectionMatrix();
+    }
+  }, [applyGroupScales, camera, sceneCount, sceneOrder, sceneSettings, progressRef]);
+
   useFrame((state, delta) => {
     const rawP = progressRef.current;
 
@@ -531,6 +602,8 @@ function ScrollWorld({
     displayLocalProgressRef.current =
       activeId != null ? getSceneLocalProgress(rawP, activeIdx, sceneCount) : 0;
     effectiveProgressRef.current = rawP;
+
+    applyGroupScales(rawP);
 
     let posX = 0;
     let posY = 0;
@@ -559,15 +632,7 @@ function ScrollWorld({
       const zoomT = scrollDrivenCinematicZoomT(localP, cinematic);
       const sample = getCinematicCamera(activeSettings, zoomT);
 
-      posX = sample.position[0];
-      posY = sample.position[1];
-      posZ = sample.position[2];
-      fov = sample.fov;
-      near = activeSettings.camera.near;
-      far = activeSettings.camera.far;
-      total = 1;
-
-      cameraEye.current.set(posX, posY, posZ);
+      cameraEye.current.set(sample.position[0], sample.position[1], sample.position[2]);
       cameraForward.current.set(sample.forward[0], sample.forward[1], sample.forward[2]);
       lookAtTarget.current.copy(cameraEye.current).add(cameraForward.current);
       camera.position.copy(cameraEye.current);
@@ -575,20 +640,16 @@ function ScrollWorld({
       camera.lookAt(lookAtTarget.current);
 
       const persp = camera as PerspectiveCamera;
-      persp.fov = fov;
-      persp.near = near;
-      persp.far = far;
+      persp.fov = sample.fov;
+      persp.near = activeSettings.camera.near;
+      persp.far = activeSettings.camera.far;
       persp.updateProjectionMatrix();
-      return;
-    }
-
+    } else {
     sceneOrder.forEach((id, index) => {
       const weight = vis[id] ?? 0;
       const settings = sceneSettings[id];
       if (!settings) return;
       const localP = getSceneLocalProgress(rawP, index, sceneCount);
-      const groupRef = getGroupRef(id);
-      if (groupRef.current) groupRef.current.scale.setScalar(weight);
 
       if (weight <= 0.001) return;
 
@@ -760,6 +821,7 @@ function ScrollWorld({
     persp.near = near;
     persp.far = far;
     persp.updateProjectionMatrix();
+    }
   });
 
   return (
