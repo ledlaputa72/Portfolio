@@ -18,7 +18,7 @@ import { Line, useGLTF } from "@react-three/drei";
 import type { Group, PerspectiveCamera } from "three";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
-import { applySynapserPointerOrbit } from "./synapser-camera-pointer";
+import { applySynapserHoverZoomDolly, applySynapserPointerOrbit, synapserHoverZoomFactor } from "./synapser-camera-pointer";
 import type { SynapserObjectHoverState } from "./synapser-object-hover";
 import {
   SYNAPSER_AUTO_ROTATE_MAX_RAD_PER_SEC,
@@ -679,7 +679,8 @@ function ScrollWorld({
       cameraForward.current.set(sample.forward[0], sample.forward[1], sample.forward[2]);
 
       const dollySpan = Math.max(0, cinematic.distanceFar - cinematic.distanceNear);
-      const pull = hoverBlend * (hoverCam?.hoverZoomPull ?? 0) * dollySpan;
+      const pullFactor = synapserHoverZoomFactor(hoverBlend, hoverCam?.hoverZoomPull ?? 0);
+      const pull = pullFactor * dollySpan;
       const px = sample.position[0] - sample.forward[0] * pull;
       const py = sample.position[1] - sample.forward[1] * pull;
       const pz = sample.position[2] - sample.forward[2] * pull;
@@ -690,7 +691,9 @@ function ScrollWorld({
       camera.lookAt(lookAtTarget.current);
 
       const persp = camera as PerspectiveCamera;
-      persp.fov = sample.fov - hoverBlend * (hoverCam?.hoverZoomFovPull ?? 0);
+      const hoverPull = hoverCam?.hoverZoomPull ?? 0;
+      const fovSign = hoverPull === 0 ? 0 : Math.sign(hoverPull);
+      persp.fov = sample.fov - hoverBlend * (hoverCam?.hoverZoomFovPull ?? 0) * fovSign;
       persp.near = activeSettings.camera.near;
       persp.far = activeSettings.camera.far;
       persp.updateProjectionMatrix();
@@ -811,11 +814,21 @@ function ScrollWorld({
       posZ = orbited.z;
     }
 
-    const zoom = hoverBlend * hoverZoomPull;
-    posX += (lookX - posX) * zoom;
-    posY += (lookY - posY) * zoom;
-    posZ += (lookZ - posZ) * zoom;
-    fov -= hoverBlend * hoverZoomFovPull;
+    const zoomed = applySynapserHoverZoomDolly(
+      posX,
+      posY,
+      posZ,
+      lookX,
+      lookY,
+      lookZ,
+      hoverBlend,
+      hoverZoomPull,
+    );
+    posX = zoomed.x;
+    posY = zoomed.y;
+    posZ = zoomed.z;
+    const fovSign = hoverZoomPull === 0 ? 0 : Math.sign(hoverZoomPull);
+    fov -= hoverBlend * hoverZoomFovPull * fovSign;
 
     camera.position.set(posX, posY, posZ);
 

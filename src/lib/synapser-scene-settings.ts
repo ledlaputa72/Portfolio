@@ -92,7 +92,7 @@ export type SynapserSceneSettings = {
     pointerDriftX: number;
     /** Mouse-edge pitch orbit strength (up/down, inverted). */
     pointerDriftY: number;
-    /** Camera pull toward look-at on object hover (0–1). */
+    /** Camera pull toward look-at on object hover (-1 zoom out … +1 strong zoom in). */
     hoverZoomPull: number;
     /** FOV reduction on object hover. */
     hoverZoomFovPull: number;

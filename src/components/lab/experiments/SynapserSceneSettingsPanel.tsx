@@ -500,7 +500,7 @@ export default function SynapserSceneSettingsPanel({ compact = false }: Synapser
             tip={SCENE_SETTING_TIPS.hoverZoomPull}
             labelWidth="w-28"
             value={s.camera.hoverZoomPull}
-            min={0}
+            min={-1}
             max={1}
             step={0.02}
             onChange={(hoverZoomPull) => patch({ camera: { ...s.camera, hoverZoomPull } })}

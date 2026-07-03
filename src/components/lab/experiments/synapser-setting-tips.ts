@@ -32,7 +32,8 @@ export const SCENE_SETTING_TIPS = {
   cameraLookAt: "카메라가 바라보는 지점입니다.",
   pointerDriftX: "마우스 좌우(화면 외곽)에 따라 오브젝트를 중심으로 카메라가 좌우 회전합니다. 반대 방향으로 움직입니다.",
   pointerDriftY: "마우스 상하(화면 외곽)에 따라 오브젝트를 중심으로 카메라가 상하 회전합니다. 마우스 위 → 화면 아래로.",
-  hoverZoomPull: "오브젝트에 마우스를 올렸을 때 lookAt 방향으로 당겨지는 줌인 비율입니다. 0=없음, 1=타겟까지.",
+  hoverZoomPull:
+    "오브젝트 호버 시 lookAt 방향으로 당기는 줌 비율입니다. +1=강한 줌인, 0=없음, -1=줌아웃.",
   hoverZoomFovPull: "호버 줌인 시 FOV가 줄어드는 양입니다. 값이 클수록 더 타이트하게 줌됩니다.",
   hoverZoomDamp: "호버 줌 인·아웃 전환 속도입니다. 높을수록 빠르게 반응합니다.",
   orbitDamp: "마우스 외곽 오빗 회전의 부드러움(따라가는 속도)입니다.",

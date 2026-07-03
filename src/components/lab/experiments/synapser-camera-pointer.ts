@@ -55,3 +55,35 @@ export function applySynapserPointerOrbit(
   };
 }
 
+/** Signed hover pull in [-1, 1]. Positive values overshoot lookAt for stronger zoom-in. */
+export function synapserHoverZoomFactor(blend: number, pull: number): number {
+  const t = blend * pull;
+  if (t === 0) return 0;
+  if (t > 0) return t * (1 + 0.6 * t);
+  return t;
+}
+
+export function applySynapserHoverZoomDolly(
+  posX: number,
+  posY: number,
+  posZ: number,
+  lookX: number,
+  lookY: number,
+  lookZ: number,
+  blend: number,
+  pull: number,
+): { x: number; y: number; z: number } {
+  const factor = synapserHoverZoomFactor(blend, pull);
+  if (factor === 0) return { x: posX, y: posY, z: posZ };
+
+  const dx = lookX - posX;
+  const dy = lookY - posY;
+  const dz = lookZ - posZ;
+
+  return {
+    x: posX + dx * factor,
+    y: posY + dy * factor,
+    z: posZ + dz * factor,
+  };
+}
+
