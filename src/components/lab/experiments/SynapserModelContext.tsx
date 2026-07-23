@@ -401,27 +401,14 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ state: savedState }),
       }).catch(() => {});
 
-      // Push ALL custom models (pending + already persisted in IndexedDB) to Blob
-      const uploadModel = async (sceneId: SynapserSceneId, buffer: ArrayBuffer, meta: SynapserModelMeta) => {
+      // Push only newly loaded/changed models to Vercel Blob
+      for (const [sceneId, entry] of Object.entries(savedModels)) {
+        if (!entry) continue;
+        const { buffer, meta } = entry;
         const fd = new FormData();
         fd.append("file", new Blob([buffer], { type: "model/gltf-binary" }), meta.fileName);
         fd.append("meta", JSON.stringify(meta));
-        await fetch(`/api/synapser/models/${sceneId}`, { method: "POST", body: fd });
-      };
-
-      for (const sceneId of savedState.sceneOrder) {
-        const alreadySaved = savedModels[sceneId];
-        if (alreadySaved) {
-          // Newly saved this session — buffer is in memory
-          uploadModel(sceneId, alreadySaved.buffer, alreadySaved.meta).catch(() => {});
-        } else {
-          const scene = scenes[sceneId];
-          if (scene?.mode !== "custom" || !scene.meta) continue;
-          // Already persisted in IndexedDB — read and upload
-          readSynapserSceneBlob(sceneId).then((buffer) => {
-            if (buffer && scene.meta) uploadModel(sceneId, buffer, scene.meta).catch(() => {});
-          }).catch(() => {});
-        }
+        fetch(`/api/synapser/models/${sceneId}`, { method: "POST", body: fd }).catch(() => {});
       }
     }
   }, [scenes, sceneOrder, isLoggedIn]);
