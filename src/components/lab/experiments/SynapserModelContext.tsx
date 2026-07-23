@@ -96,6 +96,8 @@ type SynapserModelContextValue = {
   resetScrollGlitch: () => void;
   addScene: () => void;
   removeScene: () => boolean;
+  exportProjectSettings: () => void;
+  importProjectSettings: (file: File) => Promise<void>;
 };
 
 const SynapserModelContext = createContext<SynapserModelContextValue | null>(null);
@@ -417,6 +419,78 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
     return true;
   }, [projectState, revokeSceneUrl, selectedScene]);
 
+  const exportProjectSettings = useCallback(() => {
+    setProjectState((current) => {
+      const payload = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        sceneOrder: current.sceneOrder,
+        definitions: current.definitions,
+        settings: current.settings,
+        scrollGlitch: current.scrollGlitch,
+        scrollExperience: current.scrollExperience,
+      };
+      const json = JSON.stringify(payload, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `synapser-settings-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      return current;
+    });
+  }, []);
+
+  const importProjectSettings = useCallback(async (file: File) => {
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text) as Partial<SynapserProjectState & { version: number }>;
+
+      setProjectState((prev) => {
+        const base = createDefaultProjectState();
+        const importedOrder = parsed.sceneOrder?.filter(
+          (id) => typeof id === "string" && id.length > 0,
+        ) ?? prev.sceneOrder;
+        if (importedOrder.length === 0) return prev;
+
+        const definitions = { ...prev.definitions, ...parsed.definitions };
+        const settings = { ...prev.settings };
+        const scrollGlitch = { ...prev.scrollGlitch };
+
+        for (const id of importedOrder) {
+          if (parsed.settings?.[id]) settings[id] = mergeSceneSettings(parsed.settings[id]);
+          if (!definitions[id]) definitions[id] = base.definitions[id] ?? { id, label: id, defaultObject: "Torus", procedural: "torus", title: id.toUpperCase(), kicker: "", body: "" };
+          if (parsed.scrollGlitch?.[id]) {
+            scrollGlitch[id] = mergeScrollGlitchPatch(
+              DEFAULT_SYNAPSER_SCROLL_GLITCH,
+              parsed.scrollGlitch[id],
+            );
+          }
+        }
+
+        const next: SynapserProjectState = {
+          sceneOrder: importedOrder,
+          definitions,
+          settings,
+          scrollGlitch,
+          scrollExperience: parsed.scrollExperience
+            ? normalizeSynapserScrollExperience(parsed.scrollExperience)
+            : prev.scrollExperience,
+        };
+        writeSynapserProjectState(next);
+        return next;
+      });
+
+      settingsTouchedRef.current = false;
+      setSettingsDirty(false);
+    } catch {
+      alert("설정 파일을 읽을 수 없습니다. 올바른 Synapser 설정 JSON 파일을 선택해 주세요.");
+    }
+  }, []);
+
   const value = useMemo<SynapserModelContextValue>(
     () => ({
       selectedScene,
@@ -444,6 +518,8 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
       resetScrollGlitch,
       addScene,
       removeScene,
+      exportProjectSettings,
+      importProjectSettings,
     }),
     [
       selectedScene,
@@ -470,6 +546,8 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
       resetScrollGlitch,
       addScene,
       removeScene,
+      exportProjectSettings,
+      importProjectSettings,
     ],
   );
 

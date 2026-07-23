@@ -1,5 +1,8 @@
 "use client";
 
+"use client";
+
+import { useRef } from "react";
 import { useSynapserModel } from "./SynapserModelContext";
 import SynapserModelSettings from "./SynapserModelSettings";
 import SynapserScrollExperienceSettings from "./SynapserScrollExperienceSettings";
@@ -23,7 +26,11 @@ export default function SynapserStudioSettings({ compact = false }: SynapserStud
     settingsDirty,
     loading,
     saveSceneSettings,
+    exportProjectSettings,
+    importProjectSettings,
   } = useSynapserModel();
+
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   const canRemove = sceneList.length > 1;
   const hasPendingModels = sceneList.some((scene) => scenes[scene.id]?.pendingBuffer != null);
@@ -42,16 +49,47 @@ export default function SynapserStudioSettings({ compact = false }: SynapserStud
             <p className="mt-1 text-xs text-[#f0ebe3]/35">모든 설정이 저장되었습니다.</p>
           )}
         </div>
-        <SettingTip tip={MODEL_SETTING_TIPS.saveProject}>
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => void saveSceneSettings()}
-            className="cursor-help rounded-full border border-[#c9a66b]/50 bg-[#c9a66b]/10 px-5 py-2.5 text-xs font-medium uppercase tracking-wider text-[#f0ebe3] transition-colors hover:border-[#c9a66b] hover:bg-[#c9a66b]/20 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            저장
-          </button>
-        </SettingTip>
+        <div className="flex flex-wrap gap-2">
+          <SettingTip tip="설정을 JSON 파일로 내보냅니다. 씬 구성·글리치·카메라 값이 모두 포함됩니다. (3D 모델 제외)">
+            <button
+              type="button"
+              onClick={exportProjectSettings}
+              className="cursor-help rounded-full border border-[#f0ebe3]/20 px-4 py-2 text-xs uppercase tracking-wider text-[#f0ebe3]/70 transition-colors hover:border-[#f0ebe3]/40 hover:text-[#f0ebe3]"
+            >
+              내보내기
+            </button>
+          </SettingTip>
+          <SettingTip tip="이전에 내보낸 Synapser 설정 JSON 파일을 불러옵니다. 현재 설정이 교체됩니다.">
+            <button
+              type="button"
+              onClick={() => importFileRef.current?.click()}
+              className="cursor-help rounded-full border border-[#f0ebe3]/20 px-4 py-2 text-xs uppercase tracking-wider text-[#f0ebe3]/70 transition-colors hover:border-[#f0ebe3]/40 hover:text-[#f0ebe3]"
+            >
+              가져오기
+            </button>
+          </SettingTip>
+          <input
+            ref={importFileRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void importProjectSettings(file);
+              e.target.value = "";
+            }}
+          />
+          <SettingTip tip={MODEL_SETTING_TIPS.saveProject}>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => void saveSceneSettings()}
+              className="cursor-help rounded-full border border-[#c9a66b]/50 bg-[#c9a66b]/10 px-5 py-2.5 text-xs font-medium uppercase tracking-wider text-[#f0ebe3] transition-colors hover:border-[#c9a66b] hover:bg-[#c9a66b]/20 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              저장
+            </button>
+          </SettingTip>
+        </div>
       </div>
 
       <div className="rounded-xl border border-[#2a2520] bg-[#14100d]/70 px-4 py-3">
