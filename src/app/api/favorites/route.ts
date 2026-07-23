@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
+import { Redis } from "@upstash/redis";
 import { auth } from "@/auth";
+
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
 
 function kvKey(userId: string) {
   return `lab-favorites:${userId}`;
@@ -12,7 +17,7 @@ export async function GET() {
     return NextResponse.json({ favorites: [] }, { status: 401 });
   }
 
-  const stored = await kv.get<string[]>(kvKey(session.user.id));
+  const stored = await redis.get<string[]>(kvKey(session.user.id));
   return NextResponse.json({ favorites: stored ?? [] });
 }
 
@@ -27,6 +32,6 @@ export async function POST(request: Request) {
     ? (body.favorites as unknown[]).filter((s): s is string => typeof s === "string")
     : [];
 
-  await kv.set(kvKey(session.user.id), favorites);
+  await redis.set(kvKey(session.user.id), favorites);
   return NextResponse.json({ favorites });
 }
