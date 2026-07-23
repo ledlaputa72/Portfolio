@@ -117,22 +117,6 @@ function readInitialProjectState(): SynapserProjectState {
   return typeof window !== "undefined" ? readSynapserProjectState() : createDefaultProjectState();
 }
 
-// Max binary size we'll attempt to upload (matches API route limit)
-const MAX_UPLOAD_BYTES = 700 * 1024;
-
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
-}
-
-function base64ToArrayBuffer(b64: string): ArrayBuffer {
-  const binary = atob(b64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes.buffer;
-}
 
 export function SynapserModelProvider({ children }: { children: ReactNode }) {
   const { status: sessionStatus } = useSession();
@@ -229,38 +213,6 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
     loadingRef.current = false;
   }, [revokeAllUrls]);
 
-  // Push current settings + all saved model blobs to server
-  const pushToServer = useCallback(
-    async (state: SynapserProjectState, currentScenes: Record<SynapserSceneId, SceneModelState>) => {
-      try {
-        await fetch("/api/synapser/settings", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ state }),
-        });
-      } catch {
-        /* non-critical */
-      }
-
-      for (const sceneId of state.sceneOrder) {
-        const scene = currentScenes[sceneId];
-        if (scene?.mode !== "custom" || !scene.meta) continue;
-        try {
-          const buffer = scene.pendingBuffer ?? (await readSynapserSceneBlob(sceneId));
-          if (!buffer || buffer.byteLength > MAX_UPLOAD_BYTES) continue;
-          await fetch(`/api/synapser/models/${sceneId}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ meta: scene.meta, data: arrayBufferToBase64(buffer) }),
-          });
-        } catch {
-          /* non-critical */
-        }
-      }
-    },
-    [],
-  );
-
   // Pull settings + models from server, write to localStorage/IndexedDB, re-hydrate
   const syncFromServer = useCallback(async () => {
     try {
@@ -272,14 +224,19 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
       const serverState = json.state;
       writeSynapserProjectState(serverState);
 
-      // Fetch models for each scene that has a custom model on server
+      // Fetch models for each scene from Blob storage via API
       for (const sceneId of serverState.sceneOrder) {
         try {
           const mRes = await fetch(`/api/synapser/models/${sceneId}`);
           if (!mRes.ok) continue;
-          const mJson = (await mRes.json()) as { model: { meta: SynapserModelMeta; data: string } | null };
+          const mJson = (await mRes.json()) as {
+            model: { meta: SynapserModelMeta; blobUrl: string } | null;
+          };
           if (!mJson.model) continue;
-          const buffer = base64ToArrayBuffer(mJson.model.data);
+          // Download the GLB from Blob CDN and store in IndexedDB
+          const blobRes = await fetch(mJson.model.blobUrl);
+          if (!blobRes.ok) continue;
+          const buffer = await blobRes.arrayBuffer();
           await writeSynapserSceneBlob(sceneId, buffer, mJson.model.meta);
         } catch {
           /* non-critical */
@@ -444,16 +401,14 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ state: savedState }),
       }).catch(() => {});
 
-      // Push any newly saved models
+      // Push any newly saved models to Vercel Blob
       for (const [sceneId, entry] of Object.entries(savedModels)) {
         if (!entry) continue;
         const { buffer, meta } = entry;
-        if (buffer.byteLength > MAX_UPLOAD_BYTES) continue;
-        fetch(`/api/synapser/models/${sceneId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ meta, data: arrayBufferToBase64(buffer) }),
-        }).catch(() => {});
+        const fd = new FormData();
+        fd.append("file", new Blob([buffer], { type: "model/gltf-binary" }), meta.fileName);
+        fd.append("meta", JSON.stringify(meta));
+        fetch(`/api/synapser/models/${sceneId}`, { method: "POST", body: fd }).catch(() => {});
       }
     }
   }, [scenes, sceneOrder, isLoggedIn]);
