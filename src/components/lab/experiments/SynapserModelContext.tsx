@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useSession } from "next-auth/react";
 import {
   clearSynapserScene,
   downloadSynapserModel,
@@ -116,7 +117,27 @@ function readInitialProjectState(): SynapserProjectState {
   return typeof window !== "undefined" ? readSynapserProjectState() : createDefaultProjectState();
 }
 
+// Max binary size we'll attempt to upload (matches API route limit)
+const MAX_UPLOAD_BYTES = 700 * 1024;
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+function base64ToArrayBuffer(b64: string): ArrayBuffer {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
 export function SynapserModelProvider({ children }: { children: ReactNode }) {
+  const { status: sessionStatus } = useSession();
+  const isLoggedIn = sessionStatus === "authenticated";
+
   const [projectState, setProjectState] = useState<SynapserProjectState>(readInitialProjectState);
   const [selectedScene, setSelectedScene] = useState<SynapserSceneId>("manifesto");
   const [scenes, setScenes] = useState<Record<SynapserSceneId, SceneModelState>>(() =>
@@ -208,6 +229,82 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
     loadingRef.current = false;
   }, [revokeAllUrls]);
 
+  // Push current settings + all saved model blobs to server
+  const pushToServer = useCallback(
+    async (state: SynapserProjectState, currentScenes: Record<SynapserSceneId, SceneModelState>) => {
+      try {
+        await fetch("/api/synapser/settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ state }),
+        });
+      } catch {
+        /* non-critical */
+      }
+
+      for (const sceneId of state.sceneOrder) {
+        const scene = currentScenes[sceneId];
+        if (scene?.mode !== "custom" || !scene.meta) continue;
+        try {
+          const buffer = scene.pendingBuffer ?? (await readSynapserSceneBlob(sceneId));
+          if (!buffer || buffer.byteLength > MAX_UPLOAD_BYTES) continue;
+          await fetch(`/api/synapser/models/${sceneId}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ meta: scene.meta, data: arrayBufferToBase64(buffer) }),
+          });
+        } catch {
+          /* non-critical */
+        }
+      }
+    },
+    [],
+  );
+
+  // Pull settings + models from server, write to localStorage/IndexedDB, re-hydrate
+  const syncFromServer = useCallback(async () => {
+    try {
+      const res = await fetch("/api/synapser/settings");
+      if (!res.ok) return;
+      const json = (await res.json()) as { state: SynapserProjectState | null };
+      if (!json.state) return;
+
+      const serverState = json.state;
+      writeSynapserProjectState(serverState);
+
+      // Fetch models for each scene that has a custom model on server
+      for (const sceneId of serverState.sceneOrder) {
+        try {
+          const mRes = await fetch(`/api/synapser/models/${sceneId}`);
+          if (!mRes.ok) continue;
+          const mJson = (await mRes.json()) as { model: { meta: SynapserModelMeta; data: string } | null };
+          if (!mJson.model) continue;
+          const buffer = base64ToArrayBuffer(mJson.model.data);
+          await writeSynapserSceneBlob(sceneId, buffer, mJson.model.meta);
+        } catch {
+          /* non-critical */
+        }
+      }
+
+      // Re-hydrate UI with the merged state
+      await hydrate();
+    } catch {
+      /* non-critical */
+    }
+  }, [hydrate]);
+
+  // On login: sync from server. On logout: re-hydrate from local only.
+  const prevLoginRef = useRef(false);
+  useEffect(() => {
+    const wasLoggedIn = prevLoginRef.current;
+    prevLoginRef.current = isLoggedIn;
+    if (isLoggedIn && !wasLoggedIn) {
+      syncFromServer();
+    } else if (!isLoggedIn && wasLoggedIn) {
+      hydrate();
+    }
+  }, [isLoggedIn, syncFromServer, hydrate]);
+
   useEffect(() => {
     hydrate();
     return () => revokeAllUrls();
@@ -256,7 +353,10 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
       ...prev,
       [selectedScene]: { ...EMPTY_SCENE },
     }));
-  }, [revokeSceneUrl, selectedScene]);
+    if (isLoggedIn) {
+      fetch(`/api/synapser/models/${selectedScene}`, { method: "DELETE" }).catch(() => {});
+    }
+  }, [revokeSceneUrl, selectedScene, isLoggedIn]);
 
   const setScale = useCallback(
     (next: number) => {
@@ -306,18 +406,22 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
   const saveSceneSettings = useCallback(async () => {
     if (loadingRef.current) return;
 
+    let savedState!: SynapserProjectState;
     setProjectState((current) => {
       writeSynapserProjectState(current);
+      savedState = current;
       return current;
     });
 
     const pendingUpdates: Partial<Record<SynapserSceneId, SceneModelState>> = {};
+    const savedModels: Partial<Record<SynapserSceneId, { buffer: ArrayBuffer; meta: SynapserModelMeta }>> = {};
     for (const sceneId of sceneOrder) {
       const scene = scenes[sceneId];
       if (!scene?.pendingBuffer || !scene.meta) continue;
       const nextMeta = { ...scene.meta, savedAt: Date.now(), scale: scene.scale };
       await writeSynapserSceneBlob(sceneId, scene.pendingBuffer, nextMeta);
       pendingUpdates[sceneId] = { ...scene, meta: nextMeta, pendingBuffer: null };
+      savedModels[sceneId] = { buffer: scene.pendingBuffer, meta: nextMeta };
     }
     if (Object.keys(pendingUpdates).length > 0) {
       setScenes((prev) => {
@@ -331,7 +435,28 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
 
     setSettingsDirty(false);
     settingsTouchedRef.current = false;
-  }, [scenes, sceneOrder]);
+
+    if (isLoggedIn && savedState) {
+      // Push settings to server (fire-and-forget)
+      fetch("/api/synapser/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state: savedState }),
+      }).catch(() => {});
+
+      // Push any newly saved models
+      for (const [sceneId, entry] of Object.entries(savedModels)) {
+        if (!entry) continue;
+        const { buffer, meta } = entry;
+        if (buffer.byteLength > MAX_UPLOAD_BYTES) continue;
+        fetch(`/api/synapser/models/${sceneId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ meta, data: arrayBufferToBase64(buffer) }),
+        }).catch(() => {});
+      }
+    }
+  }, [scenes, sceneOrder, isLoggedIn]);
 
   const patchScrollGlitch = useCallback(
     (patch: Partial<SynapserScrollGlitchSettings>) => {
@@ -407,6 +532,9 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
 
     clearSynapserScene(selectedScene);
     revokeSceneUrl(selectedScene);
+    if (isLoggedIn) {
+      fetch(`/api/synapser/models/${selectedScene}`, { method: "DELETE" }).catch(() => {});
+    }
 
     setProjectState((prev) => removeSceneFromProject(prev, selectedScene));
     setScenes((prev) => {
@@ -417,7 +545,7 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
     setSelectedScene(nextSelected);
     setSettingsDirty(true);
     return true;
-  }, [projectState, revokeSceneUrl, selectedScene]);
+  }, [projectState, revokeSceneUrl, selectedScene, isLoggedIn]);
 
   const exportProjectSettings = useCallback(() => {
     setProjectState((current) => {
