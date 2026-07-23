@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import FadeInSection from "@/components/FadeInSection";
 import { labSites, type LabSite } from "@/data/lab-sites";
-import { readLabFavorites, readLabFavoritesOnly, sortByLabFavorites, toggleLabFavorite, writeLabFavoritesOnly } from "@/lib/lab-favorites";
+import { readLabFavorites, readLabFavoritesOnly, sortByLabFavorites, writeLabFavorites, writeLabFavoritesOnly } from "@/lib/lab-favorites";
 
 const CATEGORY_ORDER: LabSite["category"][] = [
   "interactive-portfolio",
@@ -135,18 +136,71 @@ function LabSiteCard({
   );
 }
 
+async function fetchFavorites(): Promise<string[]> {
+  const res = await fetch("/api/favorites");
+  if (!res.ok) return [];
+  const data = (await res.json()) as { favorites: string[] };
+  return data.favorites ?? [];
+}
+
+async function saveFavorites(favorites: string[]): Promise<void> {
+  await fetch("/api/favorites", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ favorites }),
+  });
+}
+
 export default function LabPageContent() {
+  const { status } = useSession();
+  const isLoggedIn = status === "authenticated";
+  const syncedRef = useRef(false);
+
   const [favorites, setFavorites] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   useEffect(() => {
-    setFavorites(readLabFavorites());
     setFavoritesOnly(readLabFavoritesOnly());
   }, []);
 
-  const handleToggleFavorite = useCallback((slug: string) => {
-    setFavorites(toggleLabFavorite(slug));
-  }, []);
+  // 로그인 상태가 결정되면 즐겨찾기 로드
+  useEffect(() => {
+    if (status === "loading") return;
+
+    if (isLoggedIn && !syncedRef.current) {
+      syncedRef.current = true;
+      void fetchFavorites().then((serverFavorites) => {
+        // 서버에 저장된 것이 없으면 localStorage를 마이그레이션
+        if (serverFavorites.length === 0) {
+          const local = readLabFavorites();
+          if (local.length > 0) {
+            void saveFavorites(local);
+            setFavorites(local);
+            return;
+          }
+        }
+        setFavorites(serverFavorites);
+        writeLabFavorites(serverFavorites);
+      });
+    } else if (!isLoggedIn) {
+      setFavorites(readLabFavorites());
+    }
+  }, [status, isLoggedIn]);
+
+  const handleToggleFavorite = useCallback(
+    (slug: string) => {
+      setFavorites((prev) => {
+        const next = prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug];
+        if (isLoggedIn) {
+          void saveFavorites(next);
+        } else {
+          writeLabFavorites(next);
+        }
+        return next;
+      });
+    },
+    [isLoggedIn],
+  );
 
   const handleFavoritesOnlyChange = useCallback((enabled: boolean) => {
     setFavoritesOnly(enabled);
