@@ -6,6 +6,7 @@ import { Line } from "@react-three/drei";
 import type { Group, Mesh } from "three";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const HERO_CHAPTERS = [
   {
@@ -423,6 +424,7 @@ function ContactOverlay({ progress }: { progress: number }) {
 }
 
 export default function TonyMakTransition() {
+  const { locale } = useLocale();
   const progressRef = useRef(0);
   const hoverWeightRef = useRef<number[]>(PROJECTS.map((_, i) => (i === 0 ? 1 : 0)));
   const [progress, setProgress] = useState(0);
@@ -452,7 +454,7 @@ export default function TonyMakTransition() {
       onProgress={handleProgress}
       scrollHeightVh={680}
       stickyClassName="bg-[#f7f7f2] text-[#111111]"
-      hint="↓ 스크롤 — 3D 배경 scrub · 타이틀 상승 · 프로젝트 hover"
+      hint={locale === "ko" ? "↓ 스크롤 — 3D 배경 scrub · 타이틀 상승 · 프로젝트 hover" : "↓ Scroll — 3D background scrub · title rise · project hover"}
       showProgress={false}
     >
       <div

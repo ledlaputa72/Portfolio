@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import FabricsProtectionWeave from "./FabricsProtectionWeave";
 
 const PILLARS = [
@@ -10,6 +11,7 @@ const PILLARS = [
 ];
 
 export default function FabricsProtectionSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col" style={{ background: "#e8e4dc", color: "#1a1814" }}>
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-black/8 bg-[#e8e4dc]/90 px-6 py-4 backdrop-blur">
@@ -31,7 +33,9 @@ export default function FabricsProtectionSample() {
           <span className="text-black/45">designed to inspire</span>
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-black/50">
-          영상 대신 직물 매크로 셰이더와 스크롤 연동 방수 시뮬레이션으로 en.protection.gr 흐름을 재현합니다.
+          {locale === "ko"
+            ? "영상 대신 직물 매크로 셰이더와 스크롤 연동 방수 시뮬레이션으로 en.protection.gr 흐름을 재현합니다."
+            : "A procedural fabric macro shader replaces the background video, with a scroll-linked water-repellency simulation that recreates the en.protection.gr flow."}
         </p>
         <ul className="mt-8 space-y-2 text-xs text-black/40">
           {PILLARS.map((line) => (

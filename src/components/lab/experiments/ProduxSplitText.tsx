@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const PHRASES = [
   { words: ["DESIGN", "THAT", "SPEAKS"], sub: "Design that Speaks" },
@@ -74,13 +75,14 @@ export default function ProduxSplitText() {
   };
 
   const current = PHRASES[phraseIndex];
+  const { locale } = useLocale();
 
   return (
     <LabStickyScroll
       onProgress={handleProgress}
       scrollHeightVh={400}
       stickyClassName="bg-[#f4f2ed] text-[#111111]"
-      hint="↓ 스크롤 — 화면 고정, 헤드라인이 분해·재조합됩니다"
+      hint={locale === "ko" ? "↓ 스크롤 — 화면 고정, 헤드라인이 분해·재조합됩니다" : "↓ Scroll — view pins, headline splits and reassembles"}
       progressLabel="Type Progress"
     >
       <div className="flex h-full flex-col items-center justify-center px-6">

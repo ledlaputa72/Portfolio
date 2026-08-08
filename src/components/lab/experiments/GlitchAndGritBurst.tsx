@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const vertexShader = /* glsl */ `
 varying vec2 vUv;
@@ -154,6 +155,7 @@ function GlitchPlane({
 }
 
 export default function GlitchAndGritBurst() {
+  const { locale } = useLocale();
   const progressRef = useRef(0);
   const glitchRef = useRef(0);
   const sectionRef = useRef(0);
@@ -199,7 +201,7 @@ export default function GlitchAndGritBurst() {
       onProgress={handleProgress}
       scrollHeightVh={400}
       stickyClassName="bg-[#edeae4] text-[#0a0a0a]"
-      hint="↓ 스크롤 — 화면 고정, 섹션마다 글리치 버스트"
+      hint={locale === "ko" ? "↓ 스크롤 — 화면 고정, 섹션마다 글리치 버스트" : "↓ Scroll — screen locked, glitch burst per section"}
       progressLabel="Section"
     >
       <div className="relative h-full w-full">

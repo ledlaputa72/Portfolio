@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import IrisKWaveform from "./IrisKWaveform";
 import {
   IrisMusicSheetVector,
@@ -14,6 +15,7 @@ const CREDITS = [
 ];
 
 export default function IrisKSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col bg-[#101010] text-[#efefef]">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#1a1a1a] bg-[#101010]/90 px-6 py-5 backdrop-blur">
@@ -35,8 +37,9 @@ export default function IrisKSample() {
           Iris K
         </h1>
         <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-[#efefef]/45">
-          음악의 리듬이 파형과 소프트 파티클로 번역되는 감성적 경험. 스크롤하면
-          화면이 고정되고 Silence → Resonance까지 시각적 내러티브가 전개됩니다.
+          {locale === "ko"
+            ? "음악의 리듬이 파형과 소프트 파티클로 번역되는 감성적 경험. 스크롤하면 화면이 고정되고 Silence → Resonance까지 시각적 내러티브가 전개됩니다."
+            : "An emotive experience where the rhythm of music is translated into waveform and soft particles. As you scroll, the view pins and a visual narrative unfolds from Silence → Resonance."}
         </p>
         <p className="mt-8 text-[10px] text-[#efefef]/25">
           For the best experience, use headphones.

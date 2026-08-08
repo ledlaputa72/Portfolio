@@ -6,6 +6,7 @@ import { RoundedBox } from "@react-three/drei";
 import type { Group } from "three";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const WHITE = "#fafaf8";
 const BLACK = "#0a0a0a";
@@ -586,6 +587,7 @@ export default function PodiumVideoScrub() {
   const clientOffset = progress * 120;
 
   const bgColor = `rgb(${Math.round(lerp(250, 10, darkAmt))}, ${Math.round(lerp(250, 10, darkAmt))}, ${Math.round(lerp(248, 10, darkAmt))})`;
+  const { locale } = useLocale();
 
   return (
     <LabStickyScroll
@@ -593,7 +595,7 @@ export default function PodiumVideoScrub() {
       onProgress={handleProgress}
       scrollHeightVh={SCROLL_VH}
       stickyClassName="text-[#0a0a0a]"
-      hint="↓ 스크롤 — 영상 스크럽"
+      hint={locale === "ko" ? "↓ 스크롤 — 영상 스크럽" : "↓ Scroll — video scrub"}
       showProgress={false}
     >
       <div className="relative h-full w-full overflow-hidden" style={{ background: bgColor }}>

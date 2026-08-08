@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import LoftThirtyOneWalkthrough from "./LoftThirtyOneWalkthrough";
 import {
   LoftCameraVector,
@@ -17,6 +18,7 @@ const PILLARS = [
 ];
 
 export default function LoftThirtyOneSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col bg-[#f3efe8] text-[#1c1916]">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#1c1916]/8 bg-[#f3efe8]/90 px-6 py-4 backdrop-blur">
@@ -49,9 +51,9 @@ export default function LoftThirtyOneSample() {
           <span className="italic">sensational spaces.</span>
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-[#1c1916]/60">
-          레퍼런스처럼 스크롤에 따라 카메라가 로프트 공간을 가로지르며 Living →
-          Kitchen → Dining → Suite로 이동합니다. 룸별 조명 전환과 웜 인테리어 톤을
-          재현합니다.
+          {locale === "ko"
+            ? "레퍼런스처럼 스크롤에 따라 카메라가 로프트 공간을 가로지르며 Living → Kitchen → Dining → Suite로 이동합니다. 룸별 조명 전환과 웜 인테리어 톤을 재현합니다."
+            : "Like the reference, the camera travels across the loft as you scroll, moving Living → Kitchen → Dining → Suite. It recreates per-room lighting transitions and warm interior tones."}
         </p>
         <ul className="mt-8 space-y-2 text-xs text-[#1c1916]/45">
           {PILLARS.map((line) => (

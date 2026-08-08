@@ -6,6 +6,7 @@ import type { Points } from "three";
 import * as THREE from "three";
 import gsap from "gsap";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const PARTICLE_COUNT = 1100;
 
@@ -376,6 +377,7 @@ export default function NorthGardenParticles() {
 
   const p = progress / 100;
   const showWork = p > 0.24 && p < 0.62;
+  const { locale } = useLocale();
 
   return (
     <LabStickyScroll
@@ -383,7 +385,7 @@ export default function NorthGardenParticles() {
       onProgress={handleProgress}
       scrollHeightVh={440}
       stickyClassName="text-white"
-      hint="↓ 스크롤 — 바람 파티클 필드 · 배경색 동기화"
+      hint={locale === "ko" ? "↓ 스크롤 — 바람 파티클 필드 · 배경색 동기화" : "↓ Scroll — wind particle field · background-color sync"}
       showProgress={false}
     >
       <div

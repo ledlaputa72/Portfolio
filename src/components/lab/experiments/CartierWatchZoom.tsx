@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { Group } from "three";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const GOLD = "#c9a227";
 /** Inner radius of the cylindrical stage — camera sits at origin */
@@ -448,6 +449,7 @@ function stageRotationDeg(progress: number) {
 }
 
 export default function CartierWatchZoom() {
+  const { locale } = useLocale();
   const progressRef = useRef(0);
   const [universeIndex, setUniverseIndex] = useState(0);
   const [rotationDeg, setRotationDeg] = useState(0);
@@ -469,7 +471,7 @@ export default function CartierWatchZoom() {
       onProgress={handleProgress}
       scrollHeightVh={500}
       stickyClassName="bg-[#efecea] text-[#1a1816]"
-      hint="↓ 스크롤 — 배경 무대가 180° 회전, 중앙 시계는 고정·반대 회전 후 교체"
+      hint={locale === "ko" ? "↓ 스크롤 — 배경 무대가 180° 회전, 중앙 시계는 고정·반대 회전 후 교체" : "↓ Scroll — stage pivots 180°, center watch stays fixed, counter-rotates, then swaps"}
       progressLabel="Universe"
       showProgress={false}
     >

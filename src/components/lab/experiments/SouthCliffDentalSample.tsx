@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import SouthCliffDentalExplore from "./SouthCliffDentalExplore";
 
 const PILLARS = [
@@ -10,6 +11,7 @@ const PILLARS = [
 ];
 
 export default function SouthCliffDentalSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col" style={{ background: "#f4f8fb", color: "#1e3a5f" }}>
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-black/8 bg-[#f4f8fb]/90 px-6 py-4 backdrop-blur">
@@ -29,7 +31,9 @@ export default function SouthCliffDentalSample() {
           <span className="text-[#0d9488]">dental practices</span>
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-black/50">
-          southcliffdentalgroup.com 레퍼런스처럼 WebGL로 진료소 네트워크를 스크롤·클릭 탐색합니다.
+          {locale === "ko"
+            ? "southcliffdentalgroup.com 레퍼런스처럼 WebGL로 진료소 네트워크를 스크롤·클릭 탐색합니다."
+            : "Like the southcliffdentalgroup.com reference, explore the practice network in WebGL through scroll and click."}
         </p>
         <ul className="mt-8 space-y-2 text-xs text-black/40">
           {PILLARS.map((line) => (

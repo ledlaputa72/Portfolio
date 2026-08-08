@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import LabStickyScroll from "./LabStickyScroll";
 import LesseStudioFloatingObject from "./LesseStudioFloatingObject";
+import { useLocale } from "@/i18n/LocaleProvider";
 const PROJECTS = [
   { title: "Clarity Systems", category: "Brand Identity", year: "2026", tone: "from-[#e8e6e1] to-[#d4d2cb]" },
   { title: "Intentional UI", category: "Product Design", year: "2025", tone: "from-[#dfe3e8] to-[#c8ced6]" },
@@ -63,12 +64,14 @@ export default function LesseStudioGrid() {
     setRevealedCount(count);
   };
 
+  const { locale } = useLocale();
+
   return (
     <LabStickyScroll
       onProgress={handleProgress}
       scrollHeightVh={350}
       stickyClassName="bg-[#f6f5f1] text-[#1a1a18]"
-      hint="↓ 스크롤 — 중앙 3D 플로팅 → 그리드 카드 순차 reveal"
+      hint={locale === "ko" ? "↓ 스크롤 — 중앙 3D 플로팅 → 그리드 카드 순차 reveal" : "↓ Scroll — center 3D floating object → grid cards reveal in sequence"}
       progressLabel="Grid Reveal"
     >
       <div className="relative flex h-full flex-col justify-center px-6 py-10 sm:px-12">

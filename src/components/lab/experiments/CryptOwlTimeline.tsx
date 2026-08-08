@@ -6,6 +6,7 @@ import { Line } from "@react-three/drei";
 import type { Mesh } from "three";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const BASE = "#07090d";
 const ACCENT = "#7ce6ff";
@@ -252,6 +253,7 @@ function metricsForProgress(p: number) {
 }
 
 export default function CryptOwlTimeline() {
+  const { locale } = useLocale();
   const progressRef = useRef(0);
   const pointerRef = useRef({ x: 0, y: 0 });
 
@@ -286,7 +288,7 @@ export default function CryptOwlTimeline() {
       onProgress={handleProgress}
       scrollHeightVh={480}
       stickyClassName="text-[#f8fdff]"
-      hint="↓ 스크롤 — 3D 타임라인 카메라 이동"
+      hint={locale === "ko" ? "↓ 스크롤 — 3D 타임라인 카메라 이동" : "↓ Scroll — 3D timeline camera move"}
       showProgress={false}
     >
       <div

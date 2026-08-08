@@ -5,6 +5,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import type { Group, Mesh } from "three";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const TRACK_LENGTH = 64;
 const MARKER_COUNT = 18;
@@ -153,6 +154,7 @@ export default function RazorpaySprintTrack() {
   };
 
   const section = SPRINT_SECTIONS[sectionIndex];
+  const { locale } = useLocale();
 
   return (
     <LabStickyScroll
@@ -160,7 +162,7 @@ export default function RazorpaySprintTrack() {
       onProgress={handleProgress}
       scrollHeightVh={400}
       stickyClassName="bg-[#151515] text-white"
-      hint="↓ 스크롤 — 화면 고정, 신발 오브제가 트랙을 따라 전진합니다"
+      hint={locale === "ko" ? "↓ 스크롤 — 화면 고정, 신발 오브제가 트랙을 따라 전진합니다" : "↓ Scroll — view pins, shoe object advances along the track"}
       showProgress={false}
     >
       <Canvas camera={{ position: [0, 1.75, 4.2], fov: 48 }} dpr={[1, 2]}>

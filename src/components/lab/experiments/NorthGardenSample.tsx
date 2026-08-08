@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import NorthGardenParticles from "./NorthGardenParticles";
 import {
   NorthGardenLogoVector,
@@ -19,6 +20,7 @@ const CAPABILITIES = [
 ];
 
 export default function NorthGardenSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col text-white" style={{ background: "#ebe6dc" }}>
       <header className="fixed top-0 right-0 left-0 z-30 flex justify-center px-4 pt-5">
@@ -46,9 +48,9 @@ export default function NorthGardenSample() {
           designs breathe.
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-[#1a1814]/60">
-          레퍼런스처럼 WebGL 파티클 필드가 바람에 흔들리듯 부유하고, 캔버스 색상이
-          페이지 배경·theme-color에 동기화됩니다. B&amp;W 미니멀 UI와 글래스 내비게이션을
-          재현합니다.
+          {locale === "ko"
+            ? "레퍼런스처럼 WebGL 파티클 필드가 바람에 흔들리듯 부유하고, 캔버스 색상이 페이지 배경·theme-color에 동기화됩니다. B&W 미니멀 UI와 글래스 내비게이션을 재현합니다."
+            : "Like the reference, a WebGL particle field drifts as if swaying in the wind, and the canvas color syncs to the page background and theme-color. It recreates a B&W minimal UI with glass navigation."}
         </p>
         <ul className="mt-8 space-y-2 text-xs text-[#1a1814]/45">
           {CAPABILITIES.map((line) => (

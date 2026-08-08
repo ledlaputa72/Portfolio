@@ -6,6 +6,7 @@ import { Float } from "@react-three/drei";
 import type { Group } from "three";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const PRACTICES = [
   {
@@ -255,6 +256,7 @@ export default function IzanamiFogReveal() {
   }, []);
 
   const practice = PRACTICES[sectionIndex];
+  const { locale } = useLocale();
 
   return (
     <LabStickyScroll
@@ -262,7 +264,7 @@ export default function IzanamiFogReveal() {
       onProgress={handleProgress}
       scrollHeightVh={400}
       stickyClassName="bg-[#ebe6dc] text-[#1c1917]"
-      hint="↓ 스크롤 — 화면 고정, 안개가 걷히며 practice가 드러납니다"
+      hint={locale === "ko" ? "↓ 스크롤 — 화면 고정, 안개가 걷히며 practice가 드러납니다" : "↓ Scroll — view pins, fog clears to reveal practices"}
       progressLabel="Harmony"
     >
       <Canvas camera={{ position: [0, 0.2, 5], fov: 42 }} dpr={[1, 2]}>

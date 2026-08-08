@@ -1,15 +1,29 @@
 "use client";
 
 import ClimaNovaEnergyFlow from "./ClimaNovaEnergyFlow";
+import { useLocale } from "@/i18n/LocaleProvider";
 
-const PILLARS = [
-  "스크롤마다 패널이 아래→위로 슬라이드업 — 레퍼런스와 동일한 스택 스크롤",
-  "텍스트·일러스트 교차 상승 — SplitBlock에서 rise 타이밍 분리",
-  "라이트 히어로 → 웜 그라데이션 → 네이비 → 화이트 톤 전환",
-  "아이소메트릭 SVG — 주택 · 솔라 시스템 · 모듈 스택 · 컷어웨이",
+const PILLARS: { en: string; ko: string }[] = [
+  {
+    en: "Every scroll slides a panel up from below — the same stack scroll as the reference",
+    ko: "스크롤마다 패널이 아래→위로 슬라이드업 — 레퍼런스와 동일한 스택 스크롤",
+  },
+  {
+    en: "Text and illustration rise in counterpoint — split rise timing in SplitBlock",
+    ko: "텍스트·일러스트 교차 상승 — SplitBlock에서 rise 타이밍 분리",
+  },
+  {
+    en: "Light hero → warm gradient → navy → white tone transitions",
+    ko: "라이트 히어로 → 웜 그라데이션 → 네이비 → 화이트 톤 전환",
+  },
+  {
+    en: "Isometric SVG — house · solar system · module stack · cutaway",
+    ko: "아이소메트릭 SVG — 주택 · 솔라 시스템 · 모듈 스택 · 컷어웨이",
+  },
 ];
 
 export default function ClimaNovaSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col" style={{ background: "#f3f3f3", color: "#111827" }}>
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-black/8 bg-[#f3f3f3]/90 px-6 py-4 backdrop-blur">
@@ -29,11 +43,13 @@ export default function ClimaNovaSample() {
           <span className="text-black/45">de votre énergie</span>
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-black/50">
-          climanovaquebec.com 레퍼런스처럼 섹션·텍스트·일러스트가 스크롤에 따라 아래에서 위로 교차 상승합니다.
+          {locale === "ko"
+            ? "climanovaquebec.com 레퍼런스처럼 섹션·텍스트·일러스트가 스크롤에 따라 아래에서 위로 교차 상승합니다."
+            : "Like the climanovaquebec.com reference, sections, text, and illustrations rise in counterpoint from below as you scroll."}
         </p>
         <ul className="mt-8 space-y-2 text-xs text-black/40">
           {PILLARS.map((line) => (
-            <li key={line}>· {line}</li>
+            <li key={line.en}>· {line[locale]}</li>
           ))}
         </ul>
         <div className="mt-10 text-xs text-black/30">↓ scroll — panel slide-up · split parallax</div>

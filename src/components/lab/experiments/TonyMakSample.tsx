@@ -6,6 +6,7 @@ import {
   TonyMakGridVector,
   TonyMakWipeVector,
 } from "./LabVectors";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const SYSTEM_TAGS = [
   "ART DIRECTION",
@@ -15,14 +16,27 @@ const SYSTEM_TAGS = [
   "CREATIVE TECH",
 ];
 
-const FLOW = [
-  "Hero — 스크롤 scrub으로 3D 배경 애니메이션 진행/정지",
-  "타이틀 3챕터 상승·교체 (Creative at the Speed of Next → …)",
-  "Work — 프로젝트 리스트 + hover 시 뒤쪽 3D 프리뷰 교체",
-  "Contact — Let's build what's next",
+const FLOW: { en: string; ko: string }[] = [
+  {
+    ko: "Hero — 스크롤 scrub으로 3D 배경 애니메이션 진행/정지",
+    en: "Hero — scroll scrub drives/pauses the 3D background animation",
+  },
+  {
+    ko: "타이틀 3챕터 상승·교체 (Creative at the Speed of Next → …)",
+    en: "Three-chapter title rises and swaps (Creative at the Speed of Next → …)",
+  },
+  {
+    ko: "Work — 프로젝트 리스트 + hover 시 뒤쪽 3D 프리뷰 교체",
+    en: "Work — project list; hover swaps the 3D preview behind it",
+  },
+  {
+    ko: "Contact — Let's build what's next",
+    en: "Contact — Let's build what's next",
+  },
 ];
 
 export default function TonyMakSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col bg-[#f7f7f2] text-[#111111]">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#e5e5e0] bg-[#f7f7f2]/90 px-6 py-4 backdrop-blur">
@@ -46,13 +60,13 @@ export default function TonyMakSample() {
           Speed of Next
         </h1>
         <p className="mx-auto mt-6 max-w-md text-sm text-[#111111]/55">
-          레퍼런스처럼 스크롤에 따라 배경 3D가 scrub되고, 히어로 타이포가 위로
-          올라가며 교체됩니다. Work 구간에서는 프로젝트 리스트 hover로 뒤쪽 3D
-          프리뷰가 바뀝니다.
+          {locale === "ko"
+            ? "레퍼런스처럼 스크롤에 따라 배경 3D가 scrub되고, 히어로 타이포가 위로 올라가며 교체됩니다. Work 구간에서는 프로젝트 리스트 hover로 뒤쪽 3D 프리뷰가 바뀝니다."
+            : "Like the reference, the background 3D scrubs with scroll while the hero typography rises and swaps. In the Work section, hovering the project list swaps the 3D preview behind it."}
         </p>
         <ul className="mx-auto mt-8 max-w-lg space-y-2 text-left text-xs text-[#111111]/40">
           {FLOW.map((line) => (
-            <li key={line}>· {line}</li>
+            <li key={line.en}>· {line[locale]}</li>
           ))}
         </ul>
         <div className="mt-10 text-xs text-[#111111]/35">↓ scroll — pinned journey</div>

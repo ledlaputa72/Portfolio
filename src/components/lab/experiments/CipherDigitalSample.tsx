@@ -6,6 +6,7 @@ import {
   CipherGridVector,
   CipherRackVector,
 } from "./LabVectors";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const NAV = ["Infrastructure", "Investor Resources", "About", "Contact"];
 
@@ -19,6 +20,7 @@ const PILLARS = [
 ];
 
 export default function CipherDigitalSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col text-[#eff0f1]" style={{ background: "#0d0e10" }}>
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#abd233]/10 bg-[#0d0e10]/90 px-6 py-4 backdrop-blur">
@@ -40,9 +42,9 @@ export default function CipherDigitalSample() {
           <span style={{ color: "#abd233" }}>Hyperscale.</span>
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-[#c4ccd1]">
-          780vh 스크롤 여정 — hero grid(spacer 압축) → horiz-scroll 액자형 이미지 3장과
-          copy 패널 교체 → expertise 카드·용량 메트릭 순차 reveal. 레퍼런스
-          hero-fs-headline + horiz-scroll 블록 구조를 따릅니다.
+          {locale === "ko"
+            ? "780vh 스크롤 여정 — hero grid(spacer 압축) → horiz-scroll 액자형 이미지 3장과 copy 패널 교체 → expertise 카드·용량 메트릭 순차 reveal. 레퍼런스 hero-fs-headline + horiz-scroll 블록 구조를 따릅니다."
+            : "A 780vh scroll journey — hero grid (spacer compression) → horiz-scroll through three framed images with swapping copy panels → expertise cards and capacity metrics reveal in sequence. Follows the reference hero-fs-headline + horiz-scroll block structure."}
         </p>
         <div className="mt-6 flex flex-wrap gap-2">
           {PARTNERS.map((p) => (

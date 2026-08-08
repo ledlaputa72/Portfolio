@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import ReventadorCarbonCurve from "./ReventadorCarbonCurve";
 
 const PILLARS = [
@@ -10,6 +11,7 @@ const PILLARS = [
 ];
 
 export default function ReventadorSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col" style={{ background: "#061612", color: "#ecfdf5" }}>
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-white/8 bg-[#061612]/90 px-6 py-4 backdrop-blur">
@@ -29,7 +31,9 @@ export default function ReventadorSample() {
           <span style={{ color: ACCENT }}>decarbonisation</span>
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-white/50">
-          레퍼런스처럼 스크롤마다 전체 화면 챕터가 슬라이드업되며, 탄소 차트는 모니터 액자 안에서만 동작합니다.
+          {locale === "ko"
+            ? "레퍼런스처럼 스크롤마다 전체 화면 챕터가 슬라이드업되며, 탄소 차트는 모니터 액자 안에서만 동작합니다."
+            : "Like the reference, full-screen chapters slide up with each scroll, while the carbon chart operates only inside the monitor bezel frame."}
         </p>
         <ul className="mt-8 space-y-2 text-xs text-white/40">
           {PILLARS.map((line) => (

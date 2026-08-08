@@ -1,6 +1,7 @@
 "use client";
 
 import WorldCup2026DataViz from "./WorldCup2026DataViz";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const PILLARS = [
   "Scroll narrative — opener Azteca → stats → champions → hosts → legends → format → MetLife final",
@@ -10,6 +11,7 @@ const PILLARS = [
 ];
 
 export default function WorldCup2026Sample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col" style={{ background: "#f3efe6", color: "#1a2332" }}>
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-black/8 bg-[#f3efe6]/90 px-6 py-4 backdrop-blur">
@@ -29,7 +31,9 @@ export default function WorldCup2026Sample() {
           <span className="text-black/45">every stadium, every match</span>
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-black/50">
-          sheets.works 데이터 스토리텔링 흐름을 재현합니다. 팀·국가·경기장을 클릭하면 픽스처와 그룹이 동적으로 필터링됩니다.
+          {locale === "ko"
+            ? "sheets.works 데이터 스토리텔링 흐름을 재현합니다. 팀·국가·경기장을 클릭하면 픽스처와 그룹이 동적으로 필터링됩니다."
+            : "Recreates the sheets.works data-storytelling flow. Click a team, nation, or stadium to dynamically filter fixtures and groups."}
         </p>
         <ul className="mt-8 space-y-2 text-xs text-black/40">
           {PILLARS.map((line) => (

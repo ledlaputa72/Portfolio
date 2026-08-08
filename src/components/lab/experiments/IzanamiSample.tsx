@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import IzanamiFogReveal from "./IzanamiFogReveal";
 import {
   IzanamiCraftVector,
@@ -11,6 +12,7 @@ const PHILOSOPHY =
   "Harmony is not something to be created. It is something to be remembered. Guided by the ancient spirit of 和 Wa, Izanami opens a quiet path back to oneself.";
 
 export default function IzanamiSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col bg-[#ebe6dc] text-[#1c1917]">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#d8d2c8] bg-[#ebe6dc]/90 px-6 py-5 backdrop-blur">
@@ -34,8 +36,9 @@ export default function IzanamiSample() {
           who you are
         </h1>
         <p className="mx-auto mt-8 max-w-md text-sm leading-relaxed text-[#1c1917]/50">
-          스크롤하면 안개가 서서히 걷히며 School · Craft · Retreat practice가
-          드러납니다. 절제된 일본 미학과 느린 패럴럭스.
+          {locale === "ko"
+            ? "스크롤하면 안개가 서서히 걷히며 School · Craft · Retreat practice가 드러납니다. 절제된 일본 미학과 느린 패럴럭스."
+            : "As you scroll, the fog slowly lifts to reveal the School · Craft · Retreat practice. Restrained Japanese aesthetics with a slow parallax."}
         </p>
         <div className="mt-10 text-xs text-[#1c1917]/30">↓ scroll — pinned fog reveal</div>
       </section>

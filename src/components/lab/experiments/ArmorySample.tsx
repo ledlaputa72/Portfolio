@@ -6,6 +6,7 @@ import {
   ArmoryRadarVector,
   ArmorySurgeVector,
 } from "./LabVectors";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const NAV = ["SURGE", "Samaritan OS", "About", "Contact"];
 
@@ -17,6 +18,7 @@ const CAPABILITIES = [
 ];
 
 export default function ArmorySample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col text-[#ecfdf5]" style={{ background: "#0a100d" }}>
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#3dff8b]/10 bg-[#0a100d]/90 px-6 py-4 backdrop-blur">
@@ -40,9 +42,9 @@ export default function ArmorySample() {
           <span style={{ color: "#3dff8b" }}>Deter. Destroy.</span>
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-[#8fa89a]">
-          레퍼런스처럼 로딩 시 레이더 스캔 후, 스크롤에 따라 카메라가 원경(위협
-          지형)에서 근경 드론·SURGE 유닛으로 다이나믹하게 돌리합니다. 근접 이후
-          capability 콘텐츠 카드가 순차 reveal됩니다.
+          {locale === "ko"
+            ? "레퍼런스처럼 로딩 시 레이더 스캔 후, 스크롤에 따라 카메라가 원경(위협 지형)에서 근경 드론·SURGE 유닛으로 다이나믹하게 돌리합니다. 근접 이후 capability 콘텐츠 카드가 순차 reveal됩니다."
+            : "Like the reference, a radar scan runs on load, then as you scroll the camera dollies dynamically from the far threat terrain to near drones and SURGE units. After the close-up, capability content cards reveal in sequence."}
         </p>
         <ul className="mt-8 space-y-2 text-xs text-[#6b7c72]">
           {CAPABILITIES.map((line) => (

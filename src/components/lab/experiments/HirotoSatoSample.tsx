@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import HirotoSatoSignage from "./HirotoSatoSignage";
 import {
   HirotoArrowVector,
@@ -8,6 +9,7 @@ import {
 } from "./LabVectors";
 
 export default function HirotoSatoSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col bg-[#eeedea] text-[#111111]">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#ddd9d3] bg-[#eeedea]/90 px-6 py-4 backdrop-blur">
@@ -30,8 +32,9 @@ export default function HirotoSatoSample() {
           CLUSTER
         </h1>
         <p className="mx-auto mt-6 max-w-md text-sm text-[#111111]/55">
-          표지판형 3D 히어로. 스크롤하면 화면이 고정되고 클러스터가 회전하며
-          카메라가 줌인합니다.
+          {locale === "ko"
+            ? "표지판형 3D 히어로. 스크롤하면 화면이 고정되고 클러스터가 회전하며 카메라가 줌인합니다."
+            : "A signage-style 3D hero. As you scroll, the view pins while the cluster rotates and the camera zooms in."}
         </p>
         <div className="mt-10 text-xs text-[#111111]/35">↓ scroll — pinned 3D scene</div>
       </section>

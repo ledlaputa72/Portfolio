@@ -6,6 +6,7 @@ import type { Group } from "three";
 import * as THREE from "three";
 import gsap from "gsap";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const SECTIONS = [
   {
@@ -303,6 +304,7 @@ export default function LaRevoltosaGradient() {
   const p = progress / 100;
   const section = SECTIONS[sectionIndex];
   const showDrinks = p > 0.48;
+  const { locale } = useLocale();
 
   return (
     <LabStickyScroll
@@ -310,7 +312,7 @@ export default function LaRevoltosaGradient() {
       onProgress={handleProgress}
       scrollHeightVh={420}
       stickyClassName="text-white"
-      hint="↓ 스크롤 — 비비드 그라디언트 전환 · 버블 3D"
+      hint={locale === "ko" ? "↓ 스크롤 — 비비드 그라디언트 전환 · 버블 3D" : "↓ Scroll — vivid gradient transition · 3D bubbles"}
       showProgress={false}
     >
       <div

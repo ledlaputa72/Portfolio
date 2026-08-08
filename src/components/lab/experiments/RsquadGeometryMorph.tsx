@@ -5,6 +5,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import type { LineSegments, Points } from "three";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const BG = "#000000";
 const FG = "#ffffff";
@@ -312,13 +313,14 @@ export default function RsquadGeometryMorph() {
   }, []);
 
   const { from, to, t, index } = morphState(progress);
+  const { locale } = useLocale();
 
   return (
     <LabStickyScroll
       onProgress={handleProgress}
       scrollHeightVh={SCROLL_VH}
       stickyClassName="text-white"
-      hint="↓ 스크롤 — 기하 구조 모핑"
+      hint={locale === "ko" ? "↓ 스크롤 — 기하 구조 모핑" : "↓ Scroll — geometry morphing"}
       showProgress={false}
     >
       <div className="relative h-full w-full overflow-hidden" style={{ background: BG }}>

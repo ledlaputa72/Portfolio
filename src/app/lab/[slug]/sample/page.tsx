@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { labSites } from "@/data/lab-sites";
 import { labExperiments } from "@/components/lab/experiments/registry";
+import LabSampleBackLink from "@/components/lab/LabSampleBackLink";
 
 export function generateStaticParams() {
   return labSites
@@ -27,12 +27,7 @@ export default async function LabSiteSamplePage({
   return (
     <main className="flex flex-1 flex-col">
       <div className="px-6 pt-6">
-        <Link
-          href={`/lab/${site.slug}`}
-          className="text-sm text-text-secondary transition-colors hover:text-text-primary"
-        >
-          ← {site.title} 기술 페이지로
-        </Link>
+        <LabSampleBackLink slug={site.slug} title={site.title} />
       </div>
       <Sample />
     </main>

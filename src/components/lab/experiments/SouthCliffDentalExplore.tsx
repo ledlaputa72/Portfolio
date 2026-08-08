@@ -5,6 +5,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const BG = "#f4f8fb";
 const TEAL = "#0d9488";
@@ -424,13 +425,15 @@ export default function SouthCliffDentalExplore() {
     }
   });
 
+  const { locale } = useLocale();
+
   return (
     <LabStickyScroll
       progressRef={progressRef}
       onProgress={handleProgress}
       scrollHeightVh={SCROLL_VH}
       stickyClassName="text-[#1e3a5f]"
-      hint="↓ 스크롤 — 3D practice 탐색 · 위치 클릭"
+      hint={locale === "ko" ? "↓ 스크롤 — 3D practice 탐색 · 위치 클릭" : "↓ Scroll — explore 3D practices · click locations"}
       showProgress={false}
     >
       <div className="relative h-full w-full overflow-hidden" style={{ background: BG }} onPointerMove={handlePointer}>

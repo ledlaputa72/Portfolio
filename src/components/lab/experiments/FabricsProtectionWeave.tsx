@@ -4,6 +4,7 @@ import { useCallback, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const BG = "#e8e4dc";
 const TEXT = "#1a1814";
@@ -330,6 +331,7 @@ function ChapterSlide({
 }
 
 export default function FabricsProtectionWeave() {
+  const { locale } = useLocale();
   const progressRef = useRef(0);
   const protectionRef = useRef(0);
   const pointerRef = useRef({ x: 0, y: 0 });
@@ -361,7 +363,7 @@ export default function FabricsProtectionWeave() {
       onProgress={handleProgress}
       scrollHeightVh={SCROLL_VH}
       stickyClassName="text-[#1a1814]"
-      hint="↓ 스크롤 — 로터스 이펙트"
+      hint={locale === "ko" ? "↓ 스크롤 — 로터스 이펙트" : "↓ Scroll — lotus effect"}
       showProgress={false}
     >
       <div

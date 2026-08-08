@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import HydroflowFill from "./HydroflowFill";
 import {
   HydroBottleVector,
@@ -16,6 +17,7 @@ const INGREDIENTS = [
 ];
 
 export default function HydroflowSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col text-white" style={{ background: "#050d1a" }}>
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 bg-[#050d1a]/90 px-6 py-4 backdrop-blur">
@@ -39,8 +41,9 @@ export default function HydroflowSample() {
           <span className="text-[#4de8ff]">hydration.</span>
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-white/55">
-          스크롤에 맞춰 병 안 액체가 차오르고, 유체 셰이더 배경이 함께 상승합니다.
-          마우스로 병을 회전시킬 수 있습니다.
+          {locale === "ko"
+            ? "스크롤에 맞춰 병 안 액체가 차오르고, 유체 셰이더 배경이 함께 상승합니다. 마우스로 병을 회전시킬 수 있습니다."
+            : "As you scroll, liquid fills the bottle while the fluid shader background rises with it. You can rotate the bottle with the mouse."}
         </p>
         <div className="mt-8 flex flex-wrap gap-2">
           {INGREDIENTS.map((item) => (

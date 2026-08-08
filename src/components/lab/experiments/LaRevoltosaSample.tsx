@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import LaRevoltosaGradient from "./LaRevoltosaGradient";
 import {
   RevoltosaBubbleVector,
@@ -16,6 +17,7 @@ const VIBES = [
 ];
 
 export default function LaRevoltosaSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col text-white" style={{ background: "#ff4d6d" }}>
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-white/15 bg-[#ff4d6d]/85 px-6 py-4 backdrop-blur">
@@ -39,8 +41,9 @@ export default function LaRevoltosaSample() {
           <span className="text-[#ffe135]">Ibérica.</span>
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-white/75">
-          스크롤마다 강렬한 컬러 그라디언트가 배경을 빠르게 전환합니다. 3D 버블과
-          음료 카드가 라틴 정서의 다이내믹한 비주얼을 완성합니다.
+          {locale === "ko"
+            ? "스크롤마다 강렬한 컬러 그라디언트가 배경을 빠르게 전환합니다. 3D 버블과 음료 카드가 라틴 정서의 다이내믹한 비주얼을 완성합니다."
+            : "With each scroll, vivid color gradients sweep rapidly across the background. 3D bubbles and drink cards complete a dynamic, Latin-spirited visual."}
         </p>
         <div className="mt-8 flex flex-wrap gap-2">
           {VIBES.map((item) => (

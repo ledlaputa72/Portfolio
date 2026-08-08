@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { Group, Mesh } from "three";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const DEEP = "#050d1a";
 const CYAN = "#00d4ff";
@@ -257,6 +258,7 @@ export default function HydroflowFill() {
 
   const p = progress / 100;
   const section = SECTIONS[sectionIndex];
+  const { locale } = useLocale();
 
   return (
     <LabStickyScroll
@@ -264,7 +266,7 @@ export default function HydroflowFill() {
       onProgress={handleProgress}
       scrollHeightVh={450}
       stickyClassName="text-white"
-      hint="↓ 스크롤 — 병 액체 채움 · 유체 배경"
+      hint={locale === "ko" ? "↓ 스크롤 — 병 액체 채움 · 유체 배경" : "↓ Scroll — bottle liquid fill · fluid backdrop"}
       showProgress={false}
     >
       <div

@@ -3,6 +3,7 @@
 import { SynapserModelProvider } from "./SynapserModelContext";
 import SynapserStudioScroll from "./SynapserStudioScroll";
 import { SynapserScrollVector, SynapserTorusVector } from "./LabVectors";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const CHAPTERS = [
   "Manifesto — cinematic opening",
@@ -11,6 +12,7 @@ const CHAPTERS = [
 ];
 
 export default function SynapserStudioSample() {
+  const { locale } = useLocale();
   return (
     <SynapserModelProvider>
     <div className="flex flex-col bg-[#0f0c0a] text-[#f0ebe3]">
@@ -33,8 +35,9 @@ export default function SynapserStudioSample() {
           3D world.
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-[#f0ebe3]/50">
-          Lisbon digital atelier. 스크롤하면 화면이 고정되고 Manifesto → Archive →
-          Journey 장면이 카메라 drift와 함께 전환됩니다.
+          {locale === "ko"
+            ? "Lisbon digital atelier. 스크롤하면 화면이 고정되고 Manifesto → Archive → Journey 장면이 카메라 drift와 함께 전환됩니다."
+            : "Lisbon digital atelier. As you scroll, the view pins and the Manifesto → Archive → Journey scenes transition with a camera drift."}
         </p>
         <div className="mt-8 text-xs text-[#f0ebe3]/30">↓ scroll — pinned 3D scenes</div>
       </section>

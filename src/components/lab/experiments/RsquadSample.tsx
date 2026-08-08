@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import RsquadGeometryMorph from "./RsquadGeometryMorph";
 import { RsquadMorphVector, RsquadWireVector } from "./LabVectors";
 
@@ -11,6 +12,7 @@ const PILLARS = [
 ];
 
 export default function RsquadSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col text-white" style={{ background: "#000000" }}>
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 bg-black/90 px-6 py-4 backdrop-blur">
@@ -30,8 +32,9 @@ export default function RsquadSample() {
           <span className="text-[#b8fff0]">is indistinguishable from magic</span>
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-white/55">
-          스크롤에 맞춰 와이어프레임 기하 구조가 다면체 형태로 모핑됩니다. 흑백 타이포와 글리치 전환으로
-          rsquad.io의 실험실 무드를 재현합니다.
+          {locale === "ko"
+            ? "스크롤에 맞춰 와이어프레임 기하 구조가 다면체 형태로 모핑됩니다. 흑백 타이포와 글리치 전환으로 rsquad.io의 실험실 무드를 재현합니다."
+            : "As you scroll, the wireframe geometry morphs through polyhedral forms. Black-and-white typography and glitch transitions recreate rsquad.io's laboratory mood."}
         </p>
         <ul className="mt-8 space-y-2 text-xs text-white/45">
           {PILLARS.map((line) => (

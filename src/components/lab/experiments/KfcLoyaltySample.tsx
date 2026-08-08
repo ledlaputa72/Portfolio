@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import KfcLoyaltyRewards from "./KfcLoyaltyRewards";
 import {
   KfcBoxVector,
@@ -15,6 +16,7 @@ const PERKS = [
 ];
 
 export default function KfcLoyaltySample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col text-[#1a1a1a]" style={{ background: "#FFF8F0" }}>
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#E4002B]/10 bg-[#FFF8F0]/90 px-6 py-4 backdrop-blur">
@@ -44,8 +46,9 @@ export default function KfcLoyaltySample() {
           <span style={{ color: "#E4002B" }}>finger lickin&apos;</span> fun.
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-[#1a1a1a]/60">
-          레퍼런스처럼 3D 버킷, 스크롤 포인트 카운터, 바운스 리워드 박스, endless
-          게임 구간까지 온보딩 여정을 재현합니다.
+          {locale === "ko"
+            ? "레퍼런스처럼 3D 버킷, 스크롤 포인트 카운터, 바운스 리워드 박스, endless 게임 구간까지 온보딩 여정을 재현합니다."
+            : "Like the reference, it recreates the onboarding journey — a 3D bucket, scroll-driven point counters, bouncing reward boxes, and an endless game section."}
         </p>
         <ul className="mt-8 space-y-2 text-xs text-[#1a1a1a]/45">
           {PERKS.map((perk) => (

@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import RazorpaySprintTrack from "./RazorpaySprintTrack";
 import {
   RazorpayCounterVector,
@@ -9,13 +10,23 @@ import {
   RazorpayRunnerVector,
 } from "./LabVectors";
 
-const SPRINT_QUOTES = [
-  "“결제는 더 이상 마지막 단계가 아니라, 쇼퍼의 여정 그 자체다.”",
-  "“두 가지 색으로도 100개의 순간을 설계할 수 있다.”",
-  "“클릭 한 번, 트리거 하나, 그리고 다음 장면.”",
+const SPRINT_QUOTES: { en: string; ko: string }[] = [
+  {
+    en: "“Payment is no longer the final step — it is the shopper's journey itself.”",
+    ko: "“결제는 더 이상 마지막 단계가 아니라, 쇼퍼의 여정 그 자체다.”",
+  },
+  {
+    en: "“Even two colors can design a hundred moments.”",
+    ko: "“두 가지 색으로도 100개의 순간을 설계할 수 있다.”",
+  },
+  {
+    en: "“One click, one trigger, and the next scene.”",
+    ko: "“클릭 한 번, 트리거 하나, 그리고 다음 장면.”",
+  },
 ];
 
 export default function RazorpaySprintSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col bg-[#151515] text-white">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#2a2a2a] bg-[#151515]/90 px-6 py-4 backdrop-blur">
@@ -35,9 +46,9 @@ export default function RazorpaySprintSample() {
           SPRINT 26
         </h1>
         <p className="mx-auto mt-6 max-w-md text-sm text-white/55">
-          단 2색 팔레트(#0039FF / #151515)와 100개 이상의 스크롤/클릭
-          마이크로 인터랙션으로 쇼퍼의 결제 여정을 거대한 오브제 중심으로
-          풀어낸 B2B 결제 캠페인.
+          {locale === "ko"
+            ? "단 2색 팔레트(#0039FF / #151515)와 100개 이상의 스크롤/클릭 마이크로 인터랙션으로 쇼퍼의 결제 여정을 거대한 오브제 중심으로 풀어낸 B2B 결제 캠페인."
+            : "A B2B payments campaign built on a strict two-color palette (#0039FF / #151515) and 100+ scroll and click micro-interactions, framing the shopper's payment journey around a monumental central object."}
         </p>
         <div className="mt-10 text-xs text-white/35">↓ scroll to advance</div>
       </section>
@@ -56,10 +67,10 @@ export default function RazorpaySprintSample() {
         <div className="space-y-12">
           {SPRINT_QUOTES.map((quote) => (
             <p
-              key={quote}
+              key={quote.en}
               className="text-2xl font-semibold text-white/90 sm:text-3xl"
             >
-              {quote}
+              {quote[locale]}
             </p>
           ))}
         </div>

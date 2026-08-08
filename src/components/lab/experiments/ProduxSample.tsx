@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import ProduxSplitText from "./ProduxSplitText";
 import { ProduxRevealVector, ProduxSplitVector } from "./LabVectors";
 
@@ -10,6 +11,7 @@ const PRINCIPLES = [
 ];
 
 export default function ProduxSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col bg-[#f4f2ed] text-[#111111]">
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[#e0ddd4] bg-[#f4f2ed]/90 px-6 py-4 backdrop-blur">
@@ -31,8 +33,9 @@ export default function ProduxSample() {
           that speaks.
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-[#111111]/55">
-          헤드라인이 스크롤에 맞춰 단어 단위로 분해·재조합됩니다. 3개 구문이
-          Together → Split → Reform 사이클로 전환됩니다.
+          {locale === "ko"
+            ? "헤드라인이 스크롤에 맞춰 단어 단위로 분해·재조합됩니다. 3개 구문이 Together → Split → Reform 사이클로 전환됩니다."
+            : "The headline splits and reassembles word by word as you scroll. Three phrases cycle through Together → Split → Reform."}
         </p>
         <div className="mt-8 text-xs text-[#111111]/35">↓ scroll — pinned type animation</div>
       </section>

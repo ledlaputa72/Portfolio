@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const LIGHT = "#f3f3f3";
 const WARM = "#fef9ee";
@@ -227,6 +228,7 @@ function SplitBlock({
 }
 
 export default function ClimaNovaEnergyFlow() {
+  const { locale } = useLocale();
   const progressRef = useRef(0);
   const [progress, setProgress] = useState(0);
 
@@ -243,7 +245,7 @@ export default function ClimaNovaEnergyFlow() {
       onProgress={handleProgress}
       scrollHeightVh={SCROLL_VH}
       stickyClassName="text-[#111827]"
-      hint="↓ 스크롤 — 섹션이 아래에서 올라옵니다"
+      hint={locale === "ko" ? "↓ 스크롤 — 섹션이 아래에서 올라옵니다" : "↓ Scroll — sections rise up from below"}
       showProgress={false}
     >
       <div className="relative h-full w-full overflow-hidden" style={{ background: LIGHT }}>

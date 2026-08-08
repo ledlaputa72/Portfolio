@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import gsap from "gsap";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const PHRASE = "CLICK TO BREAK";
 const REVEAL_LINES = [
@@ -104,12 +105,14 @@ export default function KvsStudioBreak() {
     gsap.set(revealRef.current, { opacity: 0, y: 24 });
   };
 
+  const { locale } = useLocale();
+
   return (
     <LabStickyScroll
       onProgress={handleProgress}
       scrollHeightVh={350}
       stickyClassName="bg-[#0a0a0a] text-[#f0f0f0]"
-      hint="↓ 스크롤로 글자 분해 · 클릭으로 즉시 BREAK"
+      hint={locale === "ko" ? "↓ 스크롤로 글자 분해 · 클릭으로 즉시 BREAK" : "↓ Scroll to scatter letters · click for instant BREAK"}
       progressLabel="Break Progress"
     >
       <div

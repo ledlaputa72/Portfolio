@@ -6,6 +6,7 @@ import { RoundedBox } from "@react-three/drei";
 import type { Group } from "three";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const BG = "#f2f1ed";
 const SKY_TOP = "#b4cfe8";
@@ -564,6 +565,7 @@ function TwistPanel() {
 }
 
 export default function AirBusinessCenterFloors() {
+  const { locale } = useLocale();
   const progressRef = useRef(0);
   const pointerRef = useRef({ x: 0, y: 0 });
   const [progress, setProgress] = useState(0);
@@ -579,7 +581,7 @@ export default function AirBusinessCenterFloors() {
   const showFinaleStairs = st.finaleRise > 0.02;
 
   return (
-    <LabStickyScroll onProgress={handleProgress} scrollHeightVh={SCROLL_VH} stickyClassName="text-[#111]" hint="↓ 스크롤" showProgress={false}>
+    <LabStickyScroll onProgress={handleProgress} scrollHeightVh={SCROLL_VH} stickyClassName="text-[#111]" hint={locale === "ko" ? "↓ 스크롤" : "↓ Scroll"} showProgress={false}>
       <div className="relative h-full w-full overflow-hidden" style={{ background: BG }}>
         {showIntroStairs ? (
           <div

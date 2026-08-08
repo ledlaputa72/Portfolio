@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const SPECIMENS = [
   {
@@ -105,13 +106,15 @@ export default function PpNeueMontrealType() {
     }
   };
 
+  const { locale } = useLocale();
+
   return (
     <LabStickyScroll
       progressRef={progressRef}
       onProgress={handleProgress}
       scrollHeightVh={360}
       stickyClassName="bg-black text-white"
-      hint="↓ 스크롤 — specimen 전환 · 마우스로 weight/width 보간"
+      hint={locale === "ko" ? "↓ 스크롤 — specimen 전환 · 마우스로 weight/width 보간" : "↓ Scroll — specimen transition · mouse interpolates weight/width"}
       progressLabel="Specimen"
     >
       <div

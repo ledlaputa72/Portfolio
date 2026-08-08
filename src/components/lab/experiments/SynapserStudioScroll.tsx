@@ -18,6 +18,7 @@ import { Line, useGLTF } from "@react-three/drei";
 import type { Group, PerspectiveCamera } from "three";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 import { applySynapserHoverZoomDolly, applySynapserPointerOrbit, synapserHoverZoomFactor } from "./synapser-camera-pointer";
 import type { SynapserObjectHoverState } from "./synapser-object-hover";
 import {
@@ -950,6 +951,7 @@ function SceneTypography({
 }
 
 export default function SynapserStudioScroll() {
+  const { locale } = useLocale();
   const { sceneSettings, sceneList, sceneOrder, scrollGlitchMap, scrollExperience } = useSynapserModel();
   const scrollHeightVh = getSynapserScrollHeightVh(scrollExperience);
   const progressRef = useRef(0);
@@ -1073,7 +1075,7 @@ export default function SynapserStudioScroll() {
       scrollHeightVh={scrollHeightVh}
       scrub={0}
       stickyClassName="bg-[#0f0c0a] text-[#f0ebe3]"
-      hint="↓ 스크롤 — 구간별 줌 인·유지·줌 아웃 (스크롤 위치에 1:1 연동)"
+      hint={locale === "ko" ? "↓ 스크롤 — 구간별 줌 인·유지·줌 아웃 (스크롤 위치에 1:1 연동)" : "↓ Scroll — zoom in · hold · zoom out per section (1:1 mapped to scroll position)"}
       progressLabel="Scene Progress"
       showProgress={false}
     >

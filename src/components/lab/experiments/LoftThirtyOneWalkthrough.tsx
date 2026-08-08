@@ -5,6 +5,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import type { PointLight } from "three";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const WOOD = "#8b6f52";
 const WALL = "#f3efe8";
@@ -369,6 +370,7 @@ export default function LoftThirtyOneWalkthrough() {
   }, []);
 
   const p = progress / 100;
+  const { locale } = useLocale();
 
   return (
     <LabStickyScroll
@@ -376,7 +378,7 @@ export default function LoftThirtyOneWalkthrough() {
       onProgress={handleProgress}
       scrollHeightVh={500}
       stickyClassName="text-[#1c1916]"
-      hint="↓ 스크롤 — 로프트 3D 워크스루 카메라"
+      hint={locale === "ko" ? "↓ 스크롤 — 로프트 3D 워크스루 카메라" : "↓ Scroll — loft 3D walkthrough camera"}
       showProgress={false}
     >
       <div className="relative h-full w-full" onPointerMove={handlePointer}>

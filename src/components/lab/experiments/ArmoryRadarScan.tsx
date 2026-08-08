@@ -7,6 +7,7 @@ import type { Group, Mesh } from "three";
 import * as THREE from "three";
 import gsap from "gsap";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const BG = "#0a100d";
 const RADAR = "#3dff8b";
@@ -329,6 +330,7 @@ function DollyScene({
 }
 
 export default function ArmoryRadarScan() {
+  const { locale } = useLocale();
   const progressRef = useRef(0);
   const pointerRef = useRef({ x: 0, y: 0 });
 
@@ -362,7 +364,7 @@ export default function ArmoryRadarScan() {
       onProgress={handleProgress}
       scrollHeightVh={480}
       stickyClassName="text-[#d1fae5]"
-      hint="↓ 스크롤 — 원경→드론 근접 · capability 카드"
+      hint={locale === "ko" ? "↓ 스크롤 — 원경→드론 근접 · capability 카드" : "↓ Scroll — far→near drone approach · capability cards"}
       showProgress={false}
     >
       <div

@@ -2,6 +2,7 @@
 
 import { useCallback, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const BG = "#061612";
 const BG_MID = "#0c2a22";
@@ -331,13 +332,14 @@ export default function ReventadorCarbonCurve() {
   const monitorScale = lerp(0.88, 1, smoothstep(0.28, 0.38, progress));
 
   const heroFade = 1 - smoothstep(0.08, 0.18, progress);
+  const { locale } = useLocale();
 
   return (
     <LabStickyScroll
       onProgress={handleProgress}
       scrollHeightVh={SCROLL_VH}
       stickyClassName="text-[#ecfdf5]"
-      hint="↓ 스크롤 — Reventador chapters"
+      hint={locale === "ko" ? "↓ 스크롤 — Reventador chapters" : "↓ Scroll — Reventador chapters"}
       showProgress={false}
     >
       <div className="relative h-full w-full overflow-hidden" style={{ background: BG }}>

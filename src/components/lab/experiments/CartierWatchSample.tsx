@@ -6,6 +6,7 @@ import {
   CartierDialVector,
   CartierMovementVector,
 } from "./LabVectors";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const UNIVERSES = [
   "Tank Louis — burgundy alcove",
@@ -17,6 +18,7 @@ const UNIVERSES = [
 ];
 
 export default function CartierWatchSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col bg-[#0a0808] text-[#f5f0e8]">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#2a1818] bg-[#0a0808]/90 px-6 py-5 backdrop-blur">
@@ -40,9 +42,9 @@ export default function CartierWatchSample() {
           universes
         </h1>
         <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-[#f5f0e8]/50">
-          카메라는 원통형 무대 중앙에 고정됩니다. 스크롤하면 배경만 180°씩
-          회전하고, 중앙 시계는 반대 방향으로 회전해 화면에 고정됩니다. 배경이
-          바뀌는 시점에 시계 모델이 교체됩니다.
+          {locale === "ko"
+            ? "카메라는 원통형 무대 중앙에 고정됩니다. 스크롤하면 배경만 180°씩 회전하고, 중앙 시계는 반대 방향으로 회전해 화면에 고정됩니다. 배경이 바뀌는 시점에 시계 모델이 교체됩니다."
+            : "The camera stays pinned at the center of a cylindrical stage. As you scroll, only the backdrop rotates 180° at a time while the central watch counter-rotates to stay fixed on screen. The watch model swaps at each backdrop transition."}
         </p>
         <div className="mt-10 text-xs text-[#f5f0e8]/30">↓ scroll — cylindrical stage rotation</div>
       </section>

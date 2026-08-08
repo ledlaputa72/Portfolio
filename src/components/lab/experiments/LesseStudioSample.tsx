@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import LesseStudioGrid from "./LesseStudioGrid";
 import LesseStudioFloatingObject from "./LesseStudioFloatingObject";
 import { LesseGridVector, LesseManifestoVector } from "./LabVectors";
@@ -10,6 +11,7 @@ const PRINCIPLES = [
 ];
 
 export default function LesseStudioSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col bg-[#f6f5f1] text-[#1a1a18]">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#e2e0da] bg-[#f6f5f1]/90 px-6 py-5 backdrop-blur">
@@ -32,8 +34,9 @@ export default function LesseStudioSample() {
             Design &amp; Technology with intentional craft.
           </h1>
           <p className="mt-6 max-w-lg text-sm leading-relaxed text-[#1a1a18]/55">
-            시작 화면 중앙의 3D 오브젝트가 마우스에 미묘하게 반응합니다. 스크롤하면
-            화면이 고정되고 그리드 카드가 순차 reveal됩니다.
+            {locale === "ko"
+              ? "시작 화면 중앙의 3D 오브젝트가 마우스에 미묘하게 반응합니다. 스크롤하면 화면이 고정되고 그리드 카드가 순차 reveal됩니다."
+              : "A 3D object at the center of the opening screen responds subtly to the mouse. As you scroll, the view pins and grid cards reveal in sequence."}
           </p>
           <div className="mt-8 text-xs text-[#1a1a18]/35">↓ scroll — floating object → grid reveal</div>
         </div>

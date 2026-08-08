@@ -6,6 +6,7 @@ import {
   DigitalistsServiceVector,
   DigitalistsWordPressVector,
 } from "./LabVectors";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const SERVICES = [
   "Branding & Design",
@@ -24,6 +25,7 @@ const CASES = [
 ];
 
 export default function DigitalistsSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col bg-[#171717] text-[#f2f2f2]">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#2a2a2a] bg-[#171717]/90 px-6 py-5 backdrop-blur">
@@ -47,8 +49,9 @@ export default function DigitalistsSample() {
           <span className="text-[#f2f2f2]/50">Wien · NÖ · Burgenland</span>
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-[#f2f2f2]/55">
-          WordPress · WooCommerce · 실무적 hover 카드와 scroll reveal 중심 모션.
-          스크롤하면 서비스 카드가 먼저, 이어 레퍼런스가 순차 등장합니다.
+          {locale === "ko"
+            ? "WordPress · WooCommerce · 실무적 hover 카드와 scroll reveal 중심 모션. 스크롤하면 서비스 카드가 먼저, 이어 레퍼런스가 순차 등장합니다."
+            : "WordPress · WooCommerce · practical motion built around hover cards and scroll reveal. As you scroll, the service cards come first, then the references reveal in sequence."}
         </p>
         <div className="mt-8 text-xs text-[#f2f2f2]/30">↓ scroll — pinned card reveal</div>
       </section>

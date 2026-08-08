@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const BG = "#141618";
 const BG_DARK = "#0d0e10";
@@ -193,6 +194,7 @@ function FramedMedia({
 }
 
 export default function CipherDigitalRackAlign() {
+  const { locale } = useLocale();
   const shellRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const tensionRef = useRef<TensionTargets>({
@@ -315,7 +317,7 @@ export default function CipherDigitalRackAlign() {
       onProgress={handleProgress}
       scrollHeightVh={780}
       stickyClassName="text-[#eff0f1]"
-      hint="↓ 스크롤 — hero grid → 액자 이미지 → expertise 카드"
+      hint={locale === "ko" ? "↓ 스크롤 — hero grid → 액자 이미지 → expertise 카드" : "↓ Scroll — hero grid → framed image → expertise cards"}
       showProgress={false}
     >
       <div

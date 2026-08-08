@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import PpNeueMontrealType from "./PpNeueMontrealType";
 import {
   PpMonoGridVector,
@@ -22,6 +23,7 @@ const WEIGHTS = [
 ];
 
 export default function PpNeueMontrealSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col bg-black text-white">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 bg-black/90 px-6 py-5 backdrop-blur">
@@ -45,8 +47,9 @@ export default function PpNeueMontrealSample() {
           classic grotesk.
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-white/50">
-          타이포그래피가 주인공. 마우스에 가까울수록 글자 weight·width가
-          실시간 보간되고, 스크롤하면 specimen이 전환됩니다.
+          {locale === "ko"
+            ? "타이포그래피가 주인공. 마우스에 가까울수록 글자 weight·width가 실시간 보간되고, 스크롤하면 specimen이 전환됩니다."
+            : "Typography takes the lead. The closer the mouse, the more the letter weight and width interpolate in real time; as you scroll, the specimen switches."}
         </p>
         <div className="mt-8 text-xs text-white/30">↓ scroll — pinned variable type</div>
       </section>

@@ -1,6 +1,7 @@
 "use client";
 
 import TowerArchitecturalDoors from "./TowerArchitecturalDoors";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const PILLARS = [
   "0→100% load counter then welcome hero — towerdoors scroll milestones",
@@ -10,6 +11,7 @@ const PILLARS = [
 ];
 
 export default function TowerArchitecturalDoorsSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col" style={{ background: "#f7f6f3", color: "#1a1a1a" }}>
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-black/8 bg-[#f7f6f3]/90 px-6 py-4 backdrop-blur">
@@ -29,8 +31,9 @@ export default function TowerArchitecturalDoorsSample() {
           <span style={{ color: ACCENT }}>architectural garage doors</span>
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-black/50">
-          스크롤에 따라 TA8™ 프레임이 분해도처럼 펼쳐지고, 챕터 카피가 교체됩니다.
-          towerdoors.com.au의 로딩 카운터·마일스톤·3D 스크럽 흐름을 재현합니다.
+          {locale === "ko"
+            ? "스크롤에 따라 TA8™ 프레임이 분해도처럼 펼쳐지고, 챕터 카피가 교체됩니다. towerdoors.com.au의 로딩 카운터·마일스톤·3D 스크럽 흐름을 재현합니다."
+            : "As you scroll, the TA8™ frame unfolds like an exploded view while chapter copy swaps. Recreates the towerdoors.com.au loading counter, milestones, and 3D scrub flow."}
         </p>
         <ul className="mt-8 space-y-2 text-xs text-black/40">
           {PILLARS.map((line) => (

@@ -6,6 +6,7 @@ import {
   CryptOwlMetricVector,
   CryptOwlTimelineVector,
 } from "./LabVectors";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const NAV = ["Strategy", "Time replay", "Control", "Analytics", "Product proof"];
 
@@ -17,6 +18,7 @@ const FLOW = [
 ];
 
 export default function CryptOwlSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col text-[#f8fdff]" style={{ background: "#07090d" }}>
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#7ce6ff]/10 bg-[#07090d]/90 px-6 py-4 backdrop-blur">
@@ -41,8 +43,9 @@ export default function CryptOwlSample() {
           Build now · Rewind history · Watch it live
         </p>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-[#b7c6cf]">
-          레퍼런스처럼 스크롤에 따라 3D 타임라인을 따라 카메라가 이동하고, 노드가
-          네온 글로우로 활성화됩니다. Net PnL·ROI 메트릭 HUD가 구간별로 갱신됩니다.
+          {locale === "ko"
+            ? "레퍼런스처럼 스크롤에 따라 3D 타임라인을 따라 카메라가 이동하고, 노드가 네온 글로우로 활성화됩니다. Net PnL·ROI 메트릭 HUD가 구간별로 갱신됩니다."
+            : "Like the reference, as you scroll the camera travels along a 3D timeline and nodes light up with a neon glow. The Net PnL and ROI metrics HUD updates segment by segment."}
         </p>
         <ul className="mt-8 space-y-2 text-xs text-[#84949e]">
           {FLOW.map((line) => (

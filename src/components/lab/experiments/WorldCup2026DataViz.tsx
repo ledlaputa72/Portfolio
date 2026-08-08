@@ -2,6 +2,7 @@
 
 import { useCallback, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const BG = "#f3efe6";
 const BG_DARK = "#1a2332";
@@ -376,6 +377,7 @@ function FixtureList({
 }
 
 export default function WorldCup2026DataViz() {
+  const { locale } = useLocale();
   const progressRef = useRef(0);
   const [progress, setProgress] = useState(0);
   const [filterNation, setFilterNation] = useState<NationId>("all");
@@ -424,7 +426,7 @@ export default function WorldCup2026DataViz() {
       onProgress={handleProgress}
       scrollHeightVh={SCROLL_VH}
       stickyClassName="text-[#1a2332]"
-      hint="↓ 스크롤 — 팀·경기장 클릭 필터"
+      hint={locale === "ko" ? "↓ 스크롤 — 팀·경기장 클릭 필터" : "↓ Scroll — team · stadium click filter"}
       showProgress={false}
     >
       <div className="relative h-full w-full overflow-hidden" style={{ background: BG, color: TEXT }}>

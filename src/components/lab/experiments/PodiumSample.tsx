@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import PodiumVideoScrub from "./PodiumVideoScrub";
 
 const PILLARS = [
@@ -10,6 +11,7 @@ const PILLARS = [
 ];
 
 export default function PodiumSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col bg-white text-[#0a0a0a]">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-black/8 bg-white/90 px-6 py-4 backdrop-blur">
@@ -31,8 +33,9 @@ export default function PodiumSample() {
           <span className="text-black/55">for athleticism</span>
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-black/50">
-          스크롤이 영상 타임라인을 스크럽하고, 챕터가 연속 시퀀스로 전환됩니다.
-          podium.global의 블롭 히어로·다크 워크 모자이크·미니멀 내비를 재현합니다.
+          {locale === "ko"
+            ? "스크롤이 영상 타임라인을 스크럽하고, 챕터가 연속 시퀀스로 전환됩니다. podium.global의 블롭 히어로·다크 워크 모자이크·미니멀 내비를 재현합니다."
+            : "Scroll scrubs the film timeline as chapters shift through a continuous sequence. It recreates podium.global's blob hero, dark work mosaic, and minimal navigation."}
         </p>
         <ul className="mt-8 space-y-2 text-xs text-black/40">
           {PILLARS.map((line) => (

@@ -5,6 +5,15 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Float, Text } from "@react-three/drei";
 import type { Group } from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
+
+type PhaseKey = "cluster" | "mirror" | "archive";
+
+const PHASE_LABEL: Record<PhaseKey, { en: string; ko: string }> = {
+  cluster: { en: "Signage cluster", ko: "표지판 클러스터" },
+  mirror: { en: "Mirror showreel zoom", ko: "미러 쇼릴 줌" },
+  archive: { en: "Archive navigation", ko: "아카이브 내비게이션" },
+};
 
 function MirrorScreen() {
   return (
@@ -130,17 +139,18 @@ function CameraRig({ cameraZRef }: { cameraZRef: React.RefObject<number> }) {
 }
 
 export default function HirotoSatoSignage() {
+  const { locale } = useLocale();
   const progressRef = useRef(0);
   const scrollOrbitRef = useRef(0);
   const cameraZRef = useRef(5.5);
-  const [phase, setPhase] = useState("표지판 클러스터");
+  const [phase, setPhase] = useState<PhaseKey>("cluster");
 
   const handleProgress = (p: number) => {
     scrollOrbitRef.current = p * Math.PI * 2;
     cameraZRef.current = 5.5 - p * 2.2;
-    if (p < 0.33) setPhase("표지판 클러스터");
-    else if (p < 0.66) setPhase("미러 쇼릴 줌");
-    else setPhase("아카이브 내비게이션");
+    if (p < 0.33) setPhase("cluster");
+    else if (p < 0.66) setPhase("mirror");
+    else setPhase("archive");
   };
 
   return (
@@ -148,7 +158,7 @@ export default function HirotoSatoSignage() {
       progressRef={progressRef}
       onProgress={handleProgress}
       stickyClassName="bg-[#eeedea] text-[#111111]"
-      hint="↓ 스크롤 — 화면 고정, 클러스터가 회전·줌됩니다"
+      hint={locale === "ko" ? "↓ 스크롤 — 화면 고정, 클러스터가 회전·줌됩니다" : "↓ Scroll — screen locked, cluster rotates and zooms"}
     >
       <Canvas camera={{ position: [0, 0, 5.5], fov: 45 }} dpr={[1, 2]}>
         <CameraRig cameraZRef={cameraZRef} />
@@ -157,7 +167,7 @@ export default function HirotoSatoSignage() {
 
       <div className="pointer-events-none absolute inset-x-0 bottom-24 px-6">
         <p className="text-[10px] uppercase tracking-widest text-[#111111]/40">Scene Phase</p>
-        <p className="text-xl font-bold text-[#111111]">{phase}</p>
+        <p className="text-xl font-bold text-[#111111]">{PHASE_LABEL[phase][locale]}</p>
       </div>
     </LabStickyScroll>
   );

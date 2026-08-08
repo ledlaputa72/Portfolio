@@ -4,8 +4,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import FadeInSection from "@/components/FadeInSection";
-import { labSites, type LabSite } from "@/data/lab-sites";
+import {
+  CATEGORY_LABELS,
+  CONFIDENCE_LABELS,
+  DIFFICULTY_LABELS,
+  labSites,
+  type LabSite,
+} from "@/data/lab-sites";
 import { readLabFavorites, readLabFavoritesOnly, sortByLabFavorites, writeLabFavorites, writeLabFavoritesOnly } from "@/lib/lab-favorites";
+import { useLocale } from "@/i18n/LocaleProvider";
+import { UI } from "@/i18n/strings";
+import type { Locale } from "@/i18n/config";
 
 const CATEGORY_ORDER: LabSite["category"][] = [
   "interactive-portfolio",
@@ -15,9 +24,9 @@ const CATEGORY_ORDER: LabSite["category"][] = [
 ];
 
 const difficultyColor: Record<LabSite["difficulty"], string> = {
-  상: "bg-red-500/10 text-red-400 border-red-500/30",
-  중: "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
-  하: "bg-green-500/10 text-green-400 border-green-500/30",
+  high: "bg-red-500/10 text-red-400 border-red-500/30",
+  mid: "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
+  low: "bg-green-500/10 text-green-400 border-green-500/30",
 };
 
 function StarIcon({ filled }: { filled: boolean }) {
@@ -41,22 +50,24 @@ function FavoritesOnlyToggle({
   enabled,
   onChange,
   count,
+  locale,
 }: {
   enabled: boolean;
   onChange: (next: boolean) => void;
   count: number;
+  locale: Locale;
 }) {
   return (
     <label className="flex shrink-0 cursor-pointer select-none items-center gap-2.5 rounded-full border border-border bg-bg-secondary px-3 py-2 text-sm text-text-secondary transition-colors hover:border-accent/40">
       <span className={`${enabled ? "text-amber-400" : "text-text-muted"}`}>
         <StarIcon filled={enabled} />
       </span>
-      <span className="whitespace-nowrap text-xs sm:text-sm">추천만</span>
+      <span className="whitespace-nowrap text-xs sm:text-sm">{UI.featuredOnly[locale]}</span>
       <button
         type="button"
         role="switch"
         aria-checked={enabled}
-        aria-label="추천한 Lab만 보기"
+        aria-label={UI.featuredOnlyAria[locale]}
         onClick={() => onChange(!enabled)}
         className={`relative h-5 w-9 rounded-full transition-colors ${
           enabled ? "bg-accent" : "bg-border"
@@ -78,14 +89,16 @@ function FavoritesOnlyToggle({
 function FavoriteButton({
   active,
   onToggle,
+  locale,
 }: {
   active: boolean;
   onToggle: () => void;
+  locale: Locale;
 }) {
   return (
     <button
       type="button"
-      aria-label={active ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+      aria-label={active ? UI.removeFavorite[locale] : UI.addFavorite[locale]}
       aria-pressed={active}
       onClick={(e) => {
         e.preventDefault();
@@ -107,10 +120,12 @@ function LabSiteCard({
   site,
   isFavorite,
   onToggleFavorite,
+  locale,
 }: {
   site: LabSite;
   isFavorite: boolean;
   onToggleFavorite: (slug: string) => void;
+  locale: Locale;
 }) {
   return (
     <Link
@@ -120,18 +135,18 @@ function LabSiteCard({
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-semibold text-text-primary group-hover:text-accent">{site.title}</h3>
         <div className="flex shrink-0 items-center gap-1">
-          <FavoriteButton active={isFavorite} onToggle={() => onToggleFavorite(site.slug)} />
+          <FavoriteButton active={isFavorite} onToggle={() => onToggleFavorite(site.slug)} locale={locale} />
           <span
             className={`rounded-full border px-2 py-0.5 text-xs ${difficultyColor[site.difficulty]}`}
           >
-            {site.difficulty}
+            {DIFFICULTY_LABELS[site.difficulty][locale]}
           </span>
         </div>
       </div>
       <span className="mt-1 inline-block w-fit rounded-full border border-border px-2 py-0.5 text-xs text-text-muted">
-        {site.confidence}
+        {CONFIDENCE_LABELS[site.confidence][locale]}
       </span>
-      <p className="mt-3 line-clamp-2 text-sm text-text-secondary">{site.concept}</p>
+      <p className="mt-3 line-clamp-2 text-sm text-text-secondary">{site.concept[locale]}</p>
     </Link>
   );
 }
@@ -152,6 +167,7 @@ async function saveFavorites(favorites: string[]): Promise<void> {
 }
 
 export default function LabPageContent() {
+  const { locale } = useLocale();
   const { status } = useSession();
   const isLoggedIn = status === "authenticated";
   const syncedRef = useRef(false);
@@ -211,8 +227,7 @@ export default function LabPageContent() {
     const favoriteSet = new Set(favorites);
     return CATEGORY_ORDER.map((category) => ({
       category,
-      categoryLabel:
-        labSites.find((site) => site.category === category)?.categoryLabel ?? category,
+      categoryLabel: CATEGORY_LABELS[category],
       sites: sortByLabFavorites(
         labSites.filter(
           (site) =>
@@ -236,18 +251,16 @@ export default function LabPageContent() {
             enabled={favoritesOnly}
             onChange={handleFavoritesOnlyChange}
             count={favoriteCount}
+            locale={locale}
           />
         </div>
-        <p className="mt-6 max-w-2xl text-text-secondary">
-          이곳은 Three.js / React Three Fiber / GSAP로 직접 재현해보는 기술 테스트베드입니다. 각 카드는
-          사이트별 실험 페이지로 연결되며, 실제 구현은 Cursor에서 단계적으로 진행됩니다.
-        </p>
+        <p className="mt-6 max-w-2xl text-text-secondary">{UI.labIntro[locale]}</p>
       </section>
 
       {favoritesOnly && grouped.length === 0 ? (
         <section className="mx-auto w-full max-w-[1200px] px-6 pb-16">
           <p className="rounded-lg border border-border bg-bg-secondary px-5 py-8 text-center text-sm text-text-secondary">
-            추천한 Lab이 없습니다. 카드의 별을 눌러 추가해 보세요.
+            {UI.noFavorites[locale]}
           </p>
         </section>
       ) : (
@@ -256,7 +269,7 @@ export default function LabPageContent() {
             key={category}
             className="mx-auto w-full max-w-[1200px] px-6 py-12"
           >
-            <h2 className="text-xl font-bold text-text-primary">{categoryLabel}</h2>
+            <h2 className="text-xl font-bold text-text-primary">{categoryLabel[locale]}</h2>
             <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {sites.map((site) => (
                 <LabSiteCard
@@ -264,6 +277,7 @@ export default function LabPageContent() {
                   site={site}
                   isFavorite={favorites.includes(site.slug)}
                   onToggleFavorite={handleToggleFavorite}
+                  locale={locale}
                 />
               ))}
             </div>

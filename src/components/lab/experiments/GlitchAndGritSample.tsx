@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import GlitchAndGritBurst from "./GlitchAndGritBurst";
 import {
   GritNoiseVector,
@@ -22,6 +23,7 @@ const PROJECTS = [
 ];
 
 export default function GlitchAndGritSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col bg-[#edeae4] text-[#0a0a0a]">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#d8d4cc] bg-[#edeae4]/90 px-6 py-5 backdrop-blur">
@@ -43,8 +45,9 @@ export default function GlitchAndGritSample() {
           built to scale.
         </h1>
         <p className="mt-6 max-w-lg text-sm leading-relaxed text-[#0a0a0a]/55">
-          글리치 미학과 grit 질감. 스크롤하면 화면이 고정되고 섹션 전환마다 RGB
-          시프트·노이즈 버스트가 화면 전체를 통과합니다.
+          {locale === "ko"
+            ? "글리치 미학과 grit 질감. 스크롤하면 화면이 고정되고 섹션 전환마다 RGB 시프트·노이즈 버스트가 화면 전체를 통과합니다."
+            : "Glitch aesthetics with grit texture. As you scroll, the view pins and every section change drives an RGB shift and noise burst across the full screen."}
         </p>
         <div className="mt-8 text-xs text-[#0a0a0a]/35">↓ scroll — pinned glitch transitions</div>
       </section>

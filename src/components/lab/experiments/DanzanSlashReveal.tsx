@@ -5,6 +5,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const YELLOW = "#f5d800";
 const RED = "#e8261a";
@@ -340,6 +341,7 @@ function YellowDripBottom({ amount }: { amount: number }) {
 }
 
 export default function DanzanSlashReveal() {
+  const { locale } = useLocale();
   const progressRef = useRef(0);
   const revealRef = useRef(0);
   const dragRevealRef = useRef(0);
@@ -427,7 +429,7 @@ export default function DanzanSlashReveal() {
       onProgress={syncProgress}
       scrollHeightVh={800}
       stickyClassName="bg-[#f5d800] text-black"
-      hint="↓ 스크롤 — 레이어 슬라이드 · 점선으로 껍질 절단"
+      hint={locale === "ko" ? "↓ 스크롤 — 레이어 슬라이드 · 점선으로 껍질 절단" : "↓ Scroll — layers slide · cut the shell along the dotted line"}
       showProgress={false}
     >
       <div

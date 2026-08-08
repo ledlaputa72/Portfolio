@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const CARDS = [
   {
@@ -80,6 +81,7 @@ function hoverOut(card: HTMLElement) {
 }
 
 export default function DigitalistsCardReveal() {
+  const { locale } = useLocale();
   const gridRef = useRef<HTMLDivElement>(null);
   const headlineRef = useRef<HTMLDivElement>(null);
   const [revealedCount, setRevealedCount] = useState(0);
@@ -139,7 +141,7 @@ export default function DigitalistsCardReveal() {
       onProgress={handleProgress}
       scrollHeightVh={380}
       stickyClassName="bg-[#171717] text-[#f2f2f2]"
-      hint="↓ 스크롤 — 화면 고정, 서비스·레퍼런스 카드 순차 reveal"
+      hint={locale === "ko" ? "↓ 스크롤 — 화면 고정, 서비스·레퍼런스 카드 순차 reveal" : "↓ Scroll — screen locked, service·reference cards reveal in sequence"}
       progressLabel="Reveal"
     >
       <div className="flex h-full flex-col justify-center px-6 py-10 sm:px-12">
@@ -162,7 +164,7 @@ export default function DigitalistsCardReveal() {
             )}
           </h3>
           <p className="mt-3 text-sm text-[#f2f2f2]/50">
-            {revealedCount} / {CARDS.length} revealed · hover für 카드 모션
+            {revealedCount} / {CARDS.length} revealed · {locale === "ko" ? "hover für 카드 모션" : "hover for card motion"}
           </p>
         </header>
 

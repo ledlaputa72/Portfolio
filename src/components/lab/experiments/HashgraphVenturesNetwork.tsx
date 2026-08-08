@@ -6,6 +6,7 @@ import type { Points } from "three";
 import * as THREE from "three";
 import gsap from "gsap";
 import LabStickyScroll, { type LabStickyScrollHandle } from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const BG = "#0c1e38";
 const GLOW = "#e8f4ff";
@@ -950,6 +951,7 @@ function FullScreenSection({
 }
 
 export default function HashgraphVenturesNetwork() {
+  const { locale } = useLocale();
   const impulseRef = useRef(0);
   const hoverActiveRef = useRef(false);
   const holdRemainingRef = useRef(0);
@@ -1094,7 +1096,7 @@ export default function HashgraphVenturesNetwork() {
       onProgress={handleProgress}
       scrollHeightVh={920}
       stickyClassName="text-[#eee]"
-      hint="↓ 스크롤 — 전체 화면 대각선 전환"
+      hint={locale === "ko" ? "↓ 스크롤 — 전체 화면 대각선 전환" : "↓ Scroll — full-screen diagonal transition"}
       showProgress={false}
     >
       <div

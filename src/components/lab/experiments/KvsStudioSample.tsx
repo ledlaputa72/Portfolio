@@ -1,11 +1,13 @@
 "use client";
 
+import { useLocale } from "@/i18n/LocaleProvider";
 import KvsStudioBreak from "./KvsStudioBreak";
 import { KvsGlitchVector, KvsHudVector } from "./LabVectors";
 
 const HUD_TAGS = ["INTERACTIVE TYPE", "GLITCH UI", "COORD HUD", "MICRO-GAME"];
 
 export default function KvsStudioSample() {
+  const { locale } = useLocale();
   return (
     <div className="flex flex-col bg-[#0a0a0a] text-[#f0f0f0]">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#222] bg-[#0a0a0a]/90 px-6 py-4 backdrop-blur">
@@ -28,8 +30,9 @@ export default function KvsStudioSample() {
           <span className="text-[#ff00aa]"> Type</span>
         </h1>
         <p className="mx-auto mt-6 max-w-md text-sm text-[#f0f0f0]/50">
-          스크롤하면 글자가 순차 분해되고, 클릭하면 즉시 BREAK됩니다. 좌표 HUD가
-          함께 표시됩니다.
+          {locale === "ko"
+            ? "스크롤하면 글자가 순차 분해되고, 클릭하면 즉시 BREAK됩니다. 좌표 HUD가 함께 표시됩니다."
+            : "As you scroll, letters break apart in sequence; click to BREAK instantly. A coordinate HUD tracks alongside."}
         </p>
         <div className="mt-10 font-mono text-xs text-[#f0f0f0]/30">↓ scroll — pinned break sequence</div>
       </section>

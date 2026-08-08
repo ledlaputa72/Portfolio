@@ -6,6 +6,7 @@ import { Line } from "@react-three/drei";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
 import { useIrisAudio } from "./useIrisAudio";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const PHASES = [
   { id: "silence", label: "Silence", sub: "Press to break the silence" },
@@ -289,6 +290,7 @@ export default function IrisKWaveform() {
   };
 
   const phase = PHASES[phaseIndex];
+  const { locale } = useLocale();
 
   return (
     <LabStickyScroll
@@ -296,7 +298,7 @@ export default function IrisKWaveform() {
       onProgress={handleProgress}
       scrollHeightVh={400}
       stickyClassName="bg-[#101010] text-[#efefef]"
-      hint="↓ 스크롤 — 화면 고정, 파형·파티클이 진행됩니다"
+      hint={locale === "ko" ? "↓ 스크롤 — 화면 고정, 파형·파티클이 진행됩니다" : "↓ Scroll — view pins, waveform · particle field advance"}
       progressLabel="Movement"
     >
       <Canvas camera={{ position: [0, 0.5, 6], fov: 42 }} dpr={[1, 2]}>

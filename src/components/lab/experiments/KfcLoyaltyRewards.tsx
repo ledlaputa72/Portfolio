@@ -6,6 +6,7 @@ import { Float } from "@react-three/drei";
 import type { Group } from "three";
 import gsap from "gsap";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const KFC_RED = "#E4002B";
 const CREAM = "#FFF8F0";
@@ -197,6 +198,7 @@ export default function KfcLoyaltyRewards() {
   const p = progress / 100;
   const bgShift =
     p < 0.44 ? CREAM : p < 0.64 ? "#fff0f0" : p < 0.84 ? "#ffe8e8" : KFC_RED;
+  const { locale } = useLocale();
 
   return (
     <LabStickyScroll
@@ -204,7 +206,7 @@ export default function KfcLoyaltyRewards() {
       onProgress={handleProgress}
       scrollHeightVh={480}
       stickyClassName="text-[#1a1a1a] transition-colors duration-300"
-      hint="↓ 스크롤 — 포인트·박스·버킷 게임 여정"
+      hint={locale === "ko" ? "↓ 스크롤 — 포인트·박스·버킷 게임 여정" : "↓ Scroll — points · box · bucket game journey"}
       showProgress={false}
     >
       <div

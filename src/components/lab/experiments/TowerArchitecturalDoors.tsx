@@ -6,6 +6,7 @@ import { RoundedBox } from "@react-three/drei";
 import type { Group, Mesh } from "three";
 import * as THREE from "three";
 import LabStickyScroll from "./LabStickyScroll";
+import { useLocale } from "@/i18n/LocaleProvider";
 
 const BG = "#f7f6f3";
 const BG_DARK = "#ebe8e2";
@@ -478,6 +479,7 @@ function DiscoverHint({ progress }: { progress: number }) {
 }
 
 export default function TowerArchitecturalDoors() {
+  const { locale } = useLocale();
   const progressRef = useRef(0);
   const [progress, setProgress] = useState(0);
   const [chapterIdx, setChapterIdx] = useState(0);
@@ -496,7 +498,7 @@ export default function TowerArchitecturalDoors() {
       onProgress={handleProgress}
       scrollHeightVh={SCROLL_VH}
       stickyClassName="text-[#1a1a1a]"
-      hint="↓ 스크롤 — TA8™ 분해도"
+      hint={locale === "ko" ? "↓ 스크롤 — TA8™ 분해도" : "↓ Scroll — TA8™ exploded view"}
       showProgress={false}
     >
       <div className="relative h-full w-full overflow-hidden" style={{ background: BG }}>
