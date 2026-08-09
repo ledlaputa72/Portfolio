@@ -1,4 +1,5 @@
 import { getActiveSceneIndex, getSceneLocalProgress } from "./synapser-scene-settings";
+import type { Localized } from "@/i18n/config";
 
 export type SynapserGlitchPresetId = "cinematic" | "rupture" | "pulse" | "whisper" | "custom";
 
@@ -133,12 +134,28 @@ function buildPreset(
 export const SYNAPSER_GLITCH_PRESET_OPTIONS: {
   id: Exclude<SynapserGlitchPresetId, "custom">;
   label: string;
-  description: string;
+  description: Localized;
 }[] = [
-  { id: "cinematic", label: "Cinematic", description: "오브젝트 중심 · 화면은 은은하게" },
-  { id: "rupture", label: "Rupture", description: "씬 전환 시 불규칙 파열" },
-  { id: "pulse", label: "Pulse", description: "스크롤 속도에 맞춰 맥동" },
-  { id: "whisper", label: "Whisper", description: "가장 절제된 표현" },
+  {
+    id: "cinematic",
+    label: "Cinematic",
+    description: { en: "Object-focused — subtle full screen", ko: "오브젝트 중심 · 화면은 은은하게" },
+  },
+  {
+    id: "rupture",
+    label: "Rupture",
+    description: { en: "Irregular rupture on scene change", ko: "씬 전환 시 불규칙 파열" },
+  },
+  {
+    id: "pulse",
+    label: "Pulse",
+    description: { en: "Pulses with scroll speed", ko: "스크롤 속도에 맞춰 맥동" },
+  },
+  {
+    id: "whisper",
+    label: "Whisper",
+    description: { en: "The most restrained rendering", ko: "가장 절제된 표현" },
+  },
 ];
 
 export const SYNAPSER_GLITCH_PRESETS: Record<

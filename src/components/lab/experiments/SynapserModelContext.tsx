@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { useSession } from "next-auth/react";
+import { useLocale } from "@/i18n/LocaleProvider";
 import {
   clearSynapserScene,
   downloadSynapserModel,
@@ -119,6 +120,7 @@ function readInitialProjectState(): SynapserProjectState {
 
 
 export function SynapserModelProvider({ children }: { children: ReactNode }) {
+  const { locale } = useLocale();
   const { status: sessionStatus } = useSession();
   const isLoggedIn = sessionStatus === "authenticated";
 
@@ -477,7 +479,9 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
     const def = projectState.definitions[selectedScene];
     const label = def?.label ?? selectedScene;
     const confirmed = window.confirm(
-      `"${label}" 씬을 삭제할까요?\n이 씬의 설정·글리치·3D 모델이 모두 제거됩니다.`,
+      locale === "ko"
+        ? `"${label}" 씬을 삭제할까요?\n이 씬의 설정·글리치·3D 모델이 모두 제거됩니다.`
+        : `Delete the "${label}" scene?\nAll of this scene's settings, glitch, and 3D model will be removed.`,
     );
     if (!confirmed) return false;
 
@@ -500,7 +504,7 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
     setSelectedScene(nextSelected);
     setSettingsDirty(true);
     return true;
-  }, [projectState, revokeSceneUrl, selectedScene, isLoggedIn]);
+  }, [projectState, revokeSceneUrl, selectedScene, isLoggedIn, locale]);
 
   const exportProjectSettings = useCallback(() => {
     setProjectState((current) => {
@@ -570,9 +574,13 @@ export function SynapserModelProvider({ children }: { children: ReactNode }) {
       settingsTouchedRef.current = false;
       setSettingsDirty(false);
     } catch {
-      alert("설정 파일을 읽을 수 없습니다. 올바른 Synapser 설정 JSON 파일을 선택해 주세요.");
+      alert(
+        locale === "ko"
+          ? "설정 파일을 읽을 수 없습니다. 올바른 Synapser 설정 JSON 파일을 선택해 주세요."
+          : "Couldn't read the settings file. Please choose a valid Synapser settings JSON file.",
+      );
     }
-  }, []);
+  }, [locale]);
 
   const value = useMemo<SynapserModelContextValue>(
     () => ({

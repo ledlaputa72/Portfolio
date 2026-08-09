@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useLocale } from "@/i18n/LocaleProvider";
 import SynapserColorPicker from "./SynapserColorPicker";
 
 function decimalPlacesFromStep(step: number): number {
@@ -37,6 +38,7 @@ export function EditableRangeValue({
   onChange: (v: number) => void;
   className?: string;
 }) {
+  const { locale } = useLocale();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -83,7 +85,7 @@ export function EditableRangeValue({
         }}
         onClick={(e) => e.stopPropagation()}
         className={`w-14 shrink-0 rounded border border-[#c9a66b]/50 bg-[#0f0c0a] px-1 py-0.5 text-right font-mono text-[10px] tabular-nums text-[#f0ebe3] outline-none ${className ?? ""}`}
-        aria-label="값 입력"
+        aria-label={locale === "ko" ? "값 입력" : "Enter value"}
       />
     );
   }
@@ -91,7 +93,7 @@ export function EditableRangeValue({
   return (
     <button
       type="button"
-      title="클릭하여 값 입력"
+      title={locale === "ko" ? "클릭하여 값 입력" : "Click to enter value"}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();

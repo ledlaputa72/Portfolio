@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocale } from "@/i18n/LocaleProvider";
 import {
   hexToRgb,
   hsvToRgb,
@@ -20,6 +21,7 @@ function clampChannel(value: number) {
 }
 
 export default function SynapserColorPicker({ value, onChange, className }: SynapserColorPickerProps) {
+  const { locale } = useLocale();
   const rootRef = useRef<HTMLDivElement>(null);
   const svRef = useRef<HTMLDivElement>(null);
   const hueRef = useRef<HTMLDivElement>(null);
@@ -140,7 +142,7 @@ export default function SynapserColorPicker({ value, onChange, className }: Syna
     <div ref={rootRef} className={`relative inline-flex ${className ?? ""}`}>
       <button
         type="button"
-        aria-label="색상 선택"
+        aria-label={locale === "ko" ? "색상 선택" : "Select color"}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className="h-8 w-10 shrink-0 cursor-pointer rounded border border-[#2a2520] bg-[#0f0c0a] p-0.5"

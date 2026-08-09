@@ -42,11 +42,34 @@ export function normalizeSynapserAnchor(
   return { alignX, alignY };
 }
 
-export function anchorGridLabel(anchor: SynapserAnchorSettings): string {
+export function anchorGridLabel(
+  anchor: SynapserAnchorSettings,
+  locale: "en" | "ko" = "en",
+): string {
   const x =
-    anchor.alignX === "left" ? "좌" : anchor.alignX === "right" ? "우" : "중";
+    anchor.alignX === "left"
+      ? locale === "ko"
+        ? "좌"
+        : "L"
+      : anchor.alignX === "right"
+        ? locale === "ko"
+          ? "우"
+          : "R"
+        : locale === "ko"
+          ? "중"
+          : "C";
   const y =
-    anchor.alignY === "top" ? "상" : anchor.alignY === "bottom" ? "하" : "중";
+    anchor.alignY === "top"
+      ? locale === "ko"
+        ? "상"
+        : "T"
+      : anchor.alignY === "bottom"
+        ? locale === "ko"
+          ? "하"
+          : "B"
+        : locale === "ko"
+          ? "중"
+          : "M";
   return `${y}${x}`;
 }
 
